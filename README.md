@@ -25,4 +25,6 @@ their host software.
   analyzers.
 
 
+[ksc]: https://github.com/kaitai-io/kaitai_struct_compiler
+[kspr]: https://github.com/kaitai-io/kaitai_struct_python_runtime
 [nox]: https://github.com/lethalbit/Nox
