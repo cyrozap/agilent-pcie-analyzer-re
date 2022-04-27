@@ -66,7 +66,15 @@ types:
       - id: timestamp_ns
         type: u4le
       - id: unk3
-        size: 16
+        size: 2
+      - id: bytes_valid
+        type: u2le
+        doc: "Bits [14:0]: The length of the sequence of valid bytes in the record data, starting from the first byte. Bit [15]: Unknown."
+      - id: unk4
+        size: 8
+      - id: byte_counter
+        type: u4le
+        doc: "The total number of bytes that captured up to this point, including both the valid and invalid bytes."
   dllp:
     seq:
       - id: start_tag

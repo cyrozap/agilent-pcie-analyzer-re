@@ -24,10 +24,20 @@ def main():
         if record.number == 0 and record.timestamp_ns == 0 and record.data_length == 0:
             print("Encountered empty record, exiting...")
             break
+        record_data = pad_stream.read(record.data_length)
+
         ts_ns_int = record.timestamp_ns // 1000000000
         ts_ns_frac = record.timestamp_ns % 1000000000
-        print("Record {} @ {}.{:09d}s: {}".format(
-            record.number, ts_ns_int, ts_ns_frac, pad_stream.read(record.data_length).hex()))
+        bytes_valid = record.bytes_valid & 0x7ff
+        bytes_valid_flag = record.bytes_valid >> 15
+
+        valid_data = record_data[:bytes_valid]
+
+        print("Record {} @ {}.{:09d}s (unk1: 0x{:08x}, unk2: 0x{:08x}, unk3: {}, bytes_valid: {} ({}), unk4: {}, byte_counter: {}): {}".format(
+            record.number, ts_ns_int, ts_ns_frac,
+            record.unk1, record.unk2, record.unk3.hex(),
+            bytes_valid, bytes_valid_flag, record.unk4.hex(),
+            record.byte_counter, valid_data.hex()))
 
 
 if __name__ == "__main__":
