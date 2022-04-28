@@ -45,7 +45,8 @@ def main():
                 # Disparity Error
                 continue
 
-        print("Record {} @ {}.{:09d}s (unk1: 0x{:08x}, unk2: 0x{:08x}, unk3: {}, bytes_valid: {} ({}), flags: 0x{:08x}, byte_counter: {}): {}".format(
+        print("{} Record {} @ {}.{:09d}s (unk1: 0x{:08x}, unk2: 0x{:08x}, unk3: {}, bytes_valid: {} ({}), flags: 0x{:08x}, byte_counter: {}): {}".format(
+            "US" if get_bit(record.flags, 28) else "DS",
             record.number, ts_ns_int, ts_ns_frac,
             record.unk1, record.unk2, record.unk3.hex(),
             bytes_valid, bytes_valid_flag, record.flags,
