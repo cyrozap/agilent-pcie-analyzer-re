@@ -67,7 +67,7 @@ def get_string_for_tlp(tlp):
     if tlp.header.fmt.value & 1:
         addr_fmt = "0x{:016x}"
 
-    return "TLP: {{ Type: {}, Address: {}{} }}".format(tlp_type_name, addr_fmt.format(tlp.address), data_string)
+    return "TLP: {{ Type: {}, Address: {}, Length: {}{} }}".format(tlp_type_name, addr_fmt.format(tlp.address), tlp.header.len, data_string)
 
 def main():
     parser = argparse.ArgumentParser()
