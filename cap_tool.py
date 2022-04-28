@@ -10,8 +10,12 @@ except ModuleNotFoundError:
     sys.exit(1)
 
 
+def get_bit(value : int, bit : int):
+    return True if (value & (1 << bit)) != 0 else False
+
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("-e", "--filter-errors", default=False, action="store_true", help="Filter out records with errors.")
     parser.add_argument("pad_file", type=str, help="The Protocol Analyzer Data (.pad) file.")
     args = parser.parse_args()
 
@@ -32,6 +36,14 @@ def main():
         bytes_valid_flag = record.bytes_valid >> 15
 
         valid_data = record_data[:bytes_valid]
+
+        if args.filter_errors:
+            if get_bit(record.flags, 3):
+                # Symbol Error
+                continue
+            if get_bit(record.flags, 11):
+                # Disparity Error
+                continue
 
         print("Record {} @ {}.{:09d}s (unk1: 0x{:08x}, unk2: 0x{:08x}, unk3: {}, bytes_valid: {} ({}), flags: 0x{:08x}, byte_counter: {}): {}".format(
             record.number, ts_ns_int, ts_ns_frac,
