@@ -41,6 +41,9 @@ def get_bit(value : int, bit : int):
     return True if (value & (1 << bit)) != 0 else False
 
 def get_tlp_type_string(tlp):
+    if type(tlp.header.fmt) == int:
+        return "Inv", "Invalid Fmt: 0b{:03b}".format(tlp.header.fmt)
+
     for fmask, tfmt, tmask, ttype, name, desc in TLP_TYPES:
         if tfmt == (fmask & tlp.header.fmt.value) and ttype == (tmask & tlp.header.type):
             return name, desc
@@ -49,6 +52,8 @@ def get_tlp_type_string(tlp):
 
 def get_string_for_tlp(tlp):
     tlp_type_name, tlp_type_desc = get_tlp_type_string(tlp)
+    if tlp_type_name == "Inv":
+        return "TLP: {{ Type: {}: {} }}".format(tlp_type_name, tlp_type_desc)
 
     data = b''
     if "data" in dir(tlp):
