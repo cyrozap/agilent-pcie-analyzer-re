@@ -70,8 +70,10 @@ types:
       - id: bytes_valid
         type: u2le
         doc: "Bits [14:0]: The length of the sequence of valid bytes in the record data, starting from the first byte. Bit [15]: Unknown."
+      - id: flags
+        type: u4le
       - id: unk4
-        size: 8
+        type: u4le
       - id: byte_counter
         type: u4le
         doc: "The total number of bytes that captured up to this point, including both the valid and invalid bytes."

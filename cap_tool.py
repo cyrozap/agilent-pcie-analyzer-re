@@ -33,10 +33,10 @@ def main():
 
         valid_data = record_data[:bytes_valid]
 
-        print("Record {} @ {}.{:09d}s (unk1: 0x{:08x}, unk2: 0x{:08x}, unk3: {}, bytes_valid: {} ({}), unk4: {}, byte_counter: {}): {}".format(
+        print("Record {} @ {}.{:09d}s (unk1: 0x{:08x}, unk2: 0x{:08x}, unk3: {}, bytes_valid: {} ({}), flags: 0x{:08x}, byte_counter: {}): {}".format(
             record.number, ts_ns_int, ts_ns_frac,
             record.unk1, record.unk2, record.unk3.hex(),
-            bytes_valid, bytes_valid_flag, record.unk4.hex(),
+            bytes_valid, bytes_valid_flag, record.flags,
             record.byte_counter, valid_data.hex()))
 
 
