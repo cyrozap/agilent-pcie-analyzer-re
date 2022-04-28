@@ -72,6 +72,10 @@ types:
         doc: "Bits [14:0]: The length of the sequence of valid bytes in the record data, starting from the first byte. Bit [15]: Unknown."
       - id: flags
         type: u4le
+        doc: >
+          Bit 3: Symbol error.
+          Bit 11: Disparity error.
+          Bit 28: Upstream (1), not Downstream (0).
       - id: unk4
         type: u4le
       - id: byte_counter
