@@ -64,10 +64,12 @@ def get_string_for_tlp(tlp):
         data_string = ", Data: {}".format(data.hex())
 
     addr_fmt = "0x{:08x}"
+    addr_mask = 0xfffffffc
     if tlp.header.fmt.value & 1:
         addr_fmt = "0x{:016x}"
+        addr_mask = 0xfffffffffffffffc
 
-    return "TLP: {{ Type: {}, Address: {}, Length: {}{} }}".format(tlp_type_name, addr_fmt.format(tlp.address), tlp.header.len, data_string)
+    return "TLP: {{ Type: {}, Address: {}, Length: {}{} }}".format(tlp_type_name, addr_fmt.format(tlp.address & addr_mask), tlp.header.len, data_string)
 
 def main():
     parser = argparse.ArgumentParser()
