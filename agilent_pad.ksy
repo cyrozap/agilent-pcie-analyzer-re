@@ -114,7 +114,7 @@ types:
       - id: data
         size: 4 * header.len
         if: '(header.fmt == tlp_fmt::tdw_with_data) or (header.fmt == tlp_fmt::fdw_with_data)'
-      - id: digest
+      - id: ecrc
         type: u4
         if: header.td
   tlp_header:
