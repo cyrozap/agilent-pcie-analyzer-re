@@ -25,6 +25,19 @@ their host software.
   analyzers.
 
 
+## License
+
+Except where otherwise noted:
+
+* All software in this repository is made available under the
+  [GNU General Public License, version 3 or later][gpl].
+* All copyrightable content that is not software (e.g., reverse engineering
+  notes, this README file, etc.) is licensed under the
+  [Creative Commons Attribution-ShareAlike 4.0 International License][cc-by-sa].
+
+
 [ksc]: https://github.com/kaitai-io/kaitai_struct_compiler
 [kspr]: https://github.com/kaitai-io/kaitai_struct_python_runtime
 [nox]: https://github.com/lethalbit/Nox
+[gpl]: COPYING.txt
+[cc-by-sa]: https://creativecommons.org/licenses/by-sa/4.0/
