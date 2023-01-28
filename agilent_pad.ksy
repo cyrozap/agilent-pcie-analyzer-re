@@ -13,9 +13,9 @@ seq:
     type: u4
     repeat: expr
     repeat-expr: 4
-  - id: first_record_maybe
+  - id: first_record_number
     type: u4
-  - id: last_record_maybe
+  - id: last_record_number
     type: u4
   - id: unk1
     type: u4
@@ -36,7 +36,7 @@ seq:
   # - id: records
   #   type: record
   #   repeat: expr
-  #   repeat-expr: (record_data_offset-_io.pos)/40
+  #   repeat-expr: last_record_number + 1 - first_record_number
 enums:
   tlp_fmt:
     0: tdw_no_data

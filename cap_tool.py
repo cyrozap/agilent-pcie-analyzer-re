@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 # cap_tool.py - A tool for parsing Agilent SPT PCIe capture files
-# Copyright (C) 2022  Forest Crossman <cyrozap@gmail.com>
+# Copyright (C) 2022-2023  Forest Crossman <cyrozap@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -102,11 +102,12 @@ def main():
     pad_stream = open(args.pad_file, 'rb')
     pad_stream.seek(pad.record_data_offset)
     io = pad._io
-    while io.pos() < pad.record_data_offset - 40:
+    for record_number in range(pad.first_record_number, pad.last_record_number + 1):
         record = agilent_pad.AgilentPad.Record(io, pad, pad)
         if record.number == 0 and record.timestamp_ns == 0 and record.data_length == 0:
             print("Encountered empty record, exiting...")
             break
+        assert record_number == record.number
         record_data = pad_stream.read(record.data_length)
 
         ts_ns_int = record.timestamp_ns // 1000000000
