@@ -58,7 +58,9 @@ types:
       - id: number
         type: u4le
       - id: data_length
-        type: u8le
+        type: u4le
+      - id: unk0
+        type: u4le
       - id: unk1
         type: u4le
       - id: unk2
