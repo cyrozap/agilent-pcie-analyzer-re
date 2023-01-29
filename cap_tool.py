@@ -127,10 +127,10 @@ def main():
 
         debug_data = ""
         if args.debug:
-            debug_data = " (unk1: 0x{:08x}, unk2: 0x{:08x}, unk3: {}, bytes_valid: {} ({}), flags: 0x{:08x}, byte_counter: {})".format(
+            debug_data = " (unk1: 0x{:08x}, unk2: 0x{:08x}, unk3: {}, bytes_valid: {} ({}), flags: 0x{:08x}, data_offset: {})".format(
                 record.unk1, record.unk2, record.unk3.hex(),
                 bytes_valid, bytes_valid_flag, record.flags,
-                record.byte_counter, valid_data.hex())
+                record.data_offset, valid_data.hex())
 
         dllp = None
         if args.dllp or args.tlp:

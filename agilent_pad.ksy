@@ -78,9 +78,9 @@ types:
           Bit 28: Upstream (1), not Downstream (0).
       - id: unk4
         type: u4le
-      - id: byte_counter
+      - id: data_offset
         type: u4le
-        doc: "The total number of bytes that captured up to this point, including both the valid and invalid bytes."
+        doc: "The offset of this record's data relative to `record_data_offset`."
   dllp:
     seq:
       - id: start_tag
