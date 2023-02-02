@@ -101,6 +101,7 @@ def main():
     pad = agilent_pad.AgilentPad.from_file(args.pad_file)
     pad_stream = open(args.pad_file, 'rb')
     pad_stream.seek(pad.record_data_offset)
+    prev_timestamp_ns = 0
     io = pad._io
     for record_number in range(pad.first_record_number, pad.last_record_number + 1):
         record = agilent_pad.AgilentPad.Record(io, pad, pad)
@@ -153,10 +154,16 @@ def main():
         else:
             display_data = valid_data.hex()
 
-        print("{} Record {} @ {}.{:09d}s{}: {}".format(
+        if not prev_timestamp_ns:
+            prev_timestamp_ns = record.timestamp_ns
+
+        print("{} Record {} @ {}.{:09d}s (+{:d}ns){}: {}".format(
             "US" if get_bit(record.flags, 28) else "DS",
             record.number, ts_ns_int, ts_ns_frac,
+            max(record.timestamp_ns - prev_timestamp_ns, 0),
             debug_data, display_data))
+
+        prev_timestamp_ns = record.timestamp_ns
 
 
 if __name__ == "__main__":
