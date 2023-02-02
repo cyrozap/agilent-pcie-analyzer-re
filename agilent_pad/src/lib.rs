@@ -22,6 +22,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 
+use nom::bytes::streaming::take;
 use nom::multi::{count, length_data};
 use nom::number::streaming::{be_u16, be_u32, le_u16, le_u32};
 use nom::sequence::tuple;
@@ -35,7 +36,7 @@ pub struct Record {
     pub unk1: u32,
     pub unk2: u32,
     pub timestamp_ns: u32,
-    pub unk3: u16,
+    pub unk3: [u8; 2],
     pub data_valid: bool,
     pub data_valid_count: u16,
     pub flags: u32,
@@ -56,7 +57,7 @@ impl Record {
             le_u32,
             le_u32,
             le_u32,
-            le_u16,
+            take(2usize),
             le_u16,
             le_u32,
             le_u32,
@@ -70,7 +71,7 @@ impl Record {
                 unk1: o.3,
                 unk2: o.4,
                 timestamp_ns: o.5,
-                unk3: o.6,
+                unk3: o.6.try_into().unwrap(),
                 data_valid: (o.7 & 0x8000) != 0,
                 data_valid_count: o.7 & 0x7FFF,
                 flags: o.8,

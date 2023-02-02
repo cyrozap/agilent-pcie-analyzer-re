@@ -37,10 +37,40 @@ fn get_bit(value: u32, bit: usize) -> bool {
     value & (1 << bit) != 0
 }
 
+fn char_for_nybble(value: u8) -> char {
+    match value {
+        0 => '0',
+        1 => '1',
+        2 => '2',
+        3 => '3',
+        4 => '4',
+        5 => '5',
+        6 => '6',
+        7 => '7',
+        8 => '8',
+        9 => '9',
+        0xa => 'a',
+        0xb => 'b',
+        0xc => 'c',
+        0xd => 'd',
+        0xe => 'e',
+        0xf => 'f',
+        _ => '?',
+    }
+}
+
 fn main() {
     let args = Args::parse();
 
     let mut pad_file = match File::open(&args.pad_file) {
+        Ok(f) => f,
+        Err(error) => {
+            eprintln!("Error opening file {:?}: {:?}", &args.pad_file, error);
+            return;
+        }
+    };
+
+    let mut pad_file_2 = match File::open(&args.pad_file) {
         Ok(f) => f,
         Err(error) => {
             eprintln!("Error opening file {:?}: {:?}", &args.pad_file, error);
@@ -53,10 +83,15 @@ fn main() {
 
     let first_record_number = header.0.numbers[4];
     let last_record_number = header.0.numbers[5];
-    //let record_data_offset = header.0.numbers2[6];
+    let record_data_offset = header.0.numbers2[6];
 
     pad_file.seek(std::io::SeekFrom::Start(header.1)).unwrap();
     let mut pad_reader = BufReader::new(pad_file);
+
+    pad_file_2
+        .seek(std::io::SeekFrom::Start(record_data_offset.into()))
+        .unwrap();
+    let mut data_reader = BufReader::new(pad_file_2);
 
     let mut prev_timestamp_ns = None;
     for record_number in first_record_number..=last_record_number {
@@ -82,14 +117,57 @@ fn main() {
             prev_timestamp_ns = Some(record.timestamp_ns);
         }
 
+        let record_data = if record.data_valid {
+            data_reader
+                .seek_relative(record.data_offset.into())
+                .unwrap();
+            let mut data: Vec<u8> = vec![0; record.data_valid_count.into()];
+            data_reader.read_exact(data.as_mut_slice()).unwrap();
+            data_reader
+                .seek_relative(
+                    -<u32 as Into<i64>>::into(record.data_offset)
+                        - <usize as TryInto<i64>>::try_into(data.len()).unwrap(),
+                )
+                .unwrap();
+
+            let mut ret = String::with_capacity(2 + 2 * data.len());
+            ret.push_str(": ");
+            for b in data.iter() {
+                ret.push(char_for_nybble(b >> 4));
+                ret.push(char_for_nybble(b & 0xf));
+            }
+            ret
+        } else {
+            "".to_string()
+        };
+
+        let debug_data = format!(
+            " (unk0: 0x{:08x}, unk1: 0x{:08x}, unk2: 0x{:08x}, unk3: {:02x}{:02x}, bytes_valid: {} ({}), flags: 0x{:08x}, data_offset: {})",
+            record.unk0,
+            record.unk1,
+            record.unk2,
+            record.unk3[0],
+            record.unk3[1],
+            record.data_valid_count,
+            match record.data_valid {
+                true => 1,
+                false => 0,
+            },
+            record.flags,
+            record.data_offset,
+        );
+
         println!(
-            "{} Record {} @ {}.{:09}s (+{}ns) {:?}",
+            "{} Record {} @ {}.{:09}s (+{}ns){}{}",
             us_ds,
             record.number,
             ts_ns_int,
             ts_ns_frac,
-            record.timestamp_ns - prev_timestamp_ns.unwrap(),
             record
+                .timestamp_ns
+                .saturating_sub(prev_timestamp_ns.unwrap()),
+            debug_data,
+            record_data,
         );
 
         prev_timestamp_ns = Some(record.timestamp_ns);
