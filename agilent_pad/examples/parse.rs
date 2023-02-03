@@ -94,6 +94,7 @@ fn main() {
     let mut data_reader = BufReader::new(pad_file_2);
 
     let mut prev_timestamp_ns = None;
+    let mut current_offset: i64 = 0;
     for record_number in first_record_number..=last_record_number {
         let mut record_buffer = vec![0; 40];
         pad_reader.read_exact(record_buffer.as_mut_slice()).unwrap();
@@ -119,16 +120,12 @@ fn main() {
 
         let record_data = if record.data_valid {
             data_reader
-                .seek_relative(record.data_offset.into())
+                .seek_relative(<u32 as Into<i64>>::into(record.data_offset) - current_offset)
                 .unwrap();
             let mut data: Vec<u8> = vec![0; record.data_valid_count.into()];
             data_reader.read_exact(data.as_mut_slice()).unwrap();
-            data_reader
-                .seek_relative(
-                    -<u32 as Into<i64>>::into(record.data_offset)
-                        - <usize as TryInto<i64>>::try_into(data.len()).unwrap(),
-                )
-                .unwrap();
+            current_offset = <u32 as Into<i64>>::into(record.data_offset)
+                + <usize as TryInto<i64>>::try_into(data.len()).unwrap();
 
             let mut ret = String::with_capacity(2 + 2 * data.len());
             ret.push_str(": ");
