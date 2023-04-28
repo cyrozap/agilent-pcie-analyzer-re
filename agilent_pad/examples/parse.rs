@@ -98,11 +98,12 @@ fn main() {
     for record_number in first_record_number..=last_record_number {
         let mut record_buffer = [0; 40];
         pad_reader.read_exact(&mut record_buffer).unwrap();
-        let record = Record::from_slice(&record_buffer).unwrap();
         if record_buffer.iter().all(|b| *b == 0) {
             println!("Encountered empty record, exiting...");
             break;
         }
+
+        let record = Record::from_slice(&record_buffer).unwrap();
 
         assert_eq!(record.number, record_number);
 
