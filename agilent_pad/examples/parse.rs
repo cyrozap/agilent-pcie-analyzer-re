@@ -99,7 +99,7 @@ fn main() {
         let mut record_buffer = [0; 40];
         pad_reader.read_exact(&mut record_buffer).unwrap();
         let record = Record::from_slice(&record_buffer).unwrap();
-        if record.number == 0 && record.timestamp_ns == 0 && record.data_len == 0 {
+        if record_buffer.iter().all(|b| *b == 0) {
             println!("Encountered empty record, exiting...");
             break;
         }
