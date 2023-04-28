@@ -96,9 +96,9 @@ fn main() {
     let mut prev_timestamp_ns = None;
     let mut current_offset: i64 = 0;
     for record_number in first_record_number..=last_record_number {
-        let mut record_buffer = vec![0; 40];
-        pad_reader.read_exact(record_buffer.as_mut_slice()).unwrap();
-        let record = Record::from_slice(record_buffer.as_slice()).unwrap();
+        let mut record_buffer = [0; 40];
+        pad_reader.read_exact(&mut record_buffer).unwrap();
+        let record = Record::from_slice(&record_buffer).unwrap();
         if record.number == 0 && record.timestamp_ns == 0 && record.data_len == 0 {
             println!("Encountered empty record, exiting...");
             break;
