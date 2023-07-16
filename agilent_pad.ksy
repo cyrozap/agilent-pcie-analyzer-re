@@ -20,7 +20,11 @@ seq:
   - id: unk1
     type: u4
     repeat: expr
-    repeat-expr: 10
+    repeat-expr: 2
+  - id: timestamps_ns
+    type: u8
+    repeat: expr
+    repeat-expr: 4
   - id: guid
     type: string
   - id: ports

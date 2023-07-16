@@ -86,6 +86,7 @@ impl Record {
 pub struct PadHeader {
     pub strings: Vec<String>,
     pub numbers: Vec<u32>,
+    pub timestamps_ns: Vec<u64>,
     pub guid: String,
     pub ports: Vec<String>,
     pub numbers2: Vec<u32>,
@@ -108,7 +109,8 @@ pub fn parse_header(pad_file: &mut File) -> Option<PadHeader> {
         //println!("bytes read: {}", bytes_read);
         match tuple((
             count(parse_string, 5),
-            count(be_u32, 16),
+            count(be_u32, 8),
+            count(be_u64, 4),
             parse_string,
             count(parse_string, 2),
             count(be_u32, 3),
@@ -125,16 +127,17 @@ pub fn parse_header(pad_file: &mut File) -> Option<PadHeader> {
                         .map(|b| String::from_utf8_lossy(b).into())
                         .collect::<Vec<_>>(),
                     numbers: o.1,
-                    guid: String::from_utf8_lossy(o.2).into(),
+                    timestamps_ns: o.2,
+                    guid: String::from_utf8_lossy(o.3).into(),
                     ports: o
-                        .3
+                        .4
                         .into_iter()
                         .map(|b| String::from_utf8_lossy(b).into())
                         .collect::<Vec<_>>(),
-                    numbers2: o.4,
-                    records_offset: o.5,
-                    record_data_offset: o.6,
-                    start: String::from_utf8_lossy(o.7).into(),
+                    numbers2: o.5,
+                    records_offset: o.6,
+                    record_data_offset: o.7,
+                    start: String::from_utf8_lossy(o.8).into(),
                 })
             }
             Err(nom::Err::Incomplete(nom::Needed::Size(n))) => expand = n.get(),
