@@ -85,7 +85,10 @@ impl Record {
 #[derive(Debug)]
 pub struct PadHeader {
     pub strings: Vec<String>,
-    pub numbers: Vec<u32>,
+    pub numbers0: Vec<u32>,
+    pub first_record_number: u32,
+    pub last_record_number: u32,
+    pub numbers1: Vec<u32>,
     pub timestamps_ns: Vec<u64>,
     pub guid: String,
     pub ports: Vec<String>,
@@ -109,7 +112,10 @@ pub fn parse_header(pad_file: &mut File) -> Option<PadHeader> {
         //println!("bytes read: {}", bytes_read);
         match tuple((
             count(parse_string, 5),
-            count(be_u32, 8),
+            count(be_u32, 4),
+            be_u32,
+            be_u32,
+            count(be_u32, 2),
             count(be_u64, 4),
             parse_string,
             count(parse_string, 2),
@@ -126,18 +132,21 @@ pub fn parse_header(pad_file: &mut File) -> Option<PadHeader> {
                         .into_iter()
                         .map(|b| String::from_utf8_lossy(b).into())
                         .collect::<Vec<_>>(),
-                    numbers: o.1,
-                    timestamps_ns: o.2,
-                    guid: String::from_utf8_lossy(o.3).into(),
+                    numbers0: o.1,
+                    first_record_number: o.2,
+                    last_record_number: o.3,
+                    numbers1: o.4,
+                    timestamps_ns: o.5,
+                    guid: String::from_utf8_lossy(o.6).into(),
                     ports: o
-                        .4
+                        .7
                         .into_iter()
                         .map(|b| String::from_utf8_lossy(b).into())
                         .collect::<Vec<_>>(),
-                    numbers2: o.5,
-                    records_offset: o.6,
-                    record_data_offset: o.7,
-                    start: String::from_utf8_lossy(o.8).into(),
+                    numbers2: o.8,
+                    records_offset: o.9,
+                    record_data_offset: o.10,
+                    start: String::from_utf8_lossy(o.11).into(),
                 })
             }
             Err(nom::Err::Incomplete(nom::Needed::Size(n))) => expand = n.get(),

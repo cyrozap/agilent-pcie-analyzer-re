@@ -81,9 +81,6 @@ fn main() {
     let header = parse_header(&mut pad_file).unwrap();
     println!("{:?}", header);
 
-    let first_record_number = header.numbers[4];
-    let last_record_number = header.numbers[5];
-
     pad_file
         .seek(std::io::SeekFrom::Start(header.records_offset))
         .unwrap();
@@ -96,7 +93,7 @@ fn main() {
 
     let mut prev_timestamp_ns = None;
     let mut current_offset: i64 = 0;
-    for record_number in first_record_number..=last_record_number {
+    for record_number in header.first_record_number..=header.last_record_number {
         let mut record_buffer = [0; 40];
         pad_reader.read_exact(&mut record_buffer).unwrap();
         if record_buffer.iter().all(|b| *b == 0) {
