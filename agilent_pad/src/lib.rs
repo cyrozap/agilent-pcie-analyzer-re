@@ -28,19 +28,21 @@ use nom::number::streaming::{be_u16, be_u32, be_u64, le_u16, le_u32};
 use nom::sequence::tuple;
 use nom::IResult;
 
+fn u32_hi_lo_to_u64(hi: u32, lo: u32) -> u64 {
+    (<u32 as Into<u64>>::into(hi).checked_shl(32).unwrap()) | <u32 as Into<u64>>::into(lo)
+}
+
 #[derive(Debug)]
 pub struct Record {
     pub number: u32,
     pub data_len: u32,
-    pub unk0: u32,
-    pub unk1: u32,
+    pub unk0: u64,
     pub timestamp_ns: u64,
     pub unk3: [u8; 2],
     pub data_valid: bool,
     pub data_valid_count: u16,
     pub flags: u32,
-    pub unk4: u32,
-    pub data_offset: u32,
+    pub data_offset: u64,
 }
 
 fn le_u32_typed(input: &[u8]) -> IResult<&[u8], u32> {
@@ -66,16 +68,13 @@ impl Record {
             Ok((_, o)) => Some(Self {
                 number: o.0,
                 data_len: o.1,
-                unk0: o.2,
-                unk1: o.3,
-                timestamp_ns: (<u32 as Into<u64>>::into(o.4).checked_shl(32).unwrap())
-                    | <u32 as Into<u64>>::into(o.5),
+                unk0: u32_hi_lo_to_u64(o.2, o.3),
+                timestamp_ns: u32_hi_lo_to_u64(o.4, o.5),
                 unk3: o.6.try_into().unwrap(),
                 data_valid: (o.7 & 0x8000) != 0,
                 data_valid_count: o.7 & 0x7FFF,
                 flags: o.8,
-                unk4: o.9,
-                data_offset: o.10,
+                data_offset: u32_hi_lo_to_u64(o.9, o.10),
             }),
             Err(e) => panic!("{:?}", e),
         }

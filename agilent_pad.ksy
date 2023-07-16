@@ -73,9 +73,7 @@ types:
       - id: data_length
         type: u4le
       - id: unk0
-        type: u4le
-      - id: unk1
-        type: u4le
+        type: u8le_split
       - id: timestamp_ns
         type: u8le_split
       - id: unk3
@@ -89,10 +87,8 @@ types:
           Bit 3: Symbol error.
           Bit 11: Disparity error.
           Bit 28: Upstream (1), not Downstream (0).
-      - id: unk4
-        type: u4le
       - id: data_offset
-        type: u4le
+        type: u8le_split
         doc: "The offset of this record's data relative to `record_data_offset`."
   dllp:
     seq:

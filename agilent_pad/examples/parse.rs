@@ -119,11 +119,13 @@ fn main() {
 
         let record_data = if record.data_valid {
             data_reader
-                .seek_relative(<u32 as Into<i64>>::into(record.data_offset) - current_offset)
+                .seek_relative(
+                    <u64 as TryInto<i64>>::try_into(record.data_offset).unwrap() - current_offset,
+                )
                 .unwrap();
             let mut data: Vec<u8> = vec![0; record.data_valid_count.into()];
             data_reader.read_exact(data.as_mut_slice()).unwrap();
-            current_offset = <u32 as Into<i64>>::into(record.data_offset)
+            current_offset = <u64 as TryInto<i64>>::try_into(record.data_offset).unwrap()
                 + <usize as TryInto<i64>>::try_into(data.len()).unwrap();
 
             let mut ret = String::with_capacity(2 + 2 * data.len());
@@ -138,9 +140,8 @@ fn main() {
         };
 
         let debug_data = format!(
-            " (unk0: 0x{:08x}, unk1: 0x{:08x}, unk3: {:02x}{:02x}, bytes_valid: {} ({}), flags: 0x{:08x}, data_offset: {})",
+            " (unk0: 0x{:016x}, unk3: {:02x}{:02x}, bytes_valid: {} ({}), flags: 0x{:08x}, data_offset: {})",
             record.unk0,
-            record.unk1,
             record.unk3[0],
             record.unk3[1],
             record.data_valid_count,
