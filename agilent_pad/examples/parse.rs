@@ -81,14 +81,16 @@ fn main() {
     let header = parse_header(&mut pad_file).unwrap();
     println!("{:?}", header);
 
-    let first_record_number = header.0.numbers[4];
-    let last_record_number = header.0.numbers[5];
+    let first_record_number = header.numbers[4];
+    let last_record_number = header.numbers[5];
 
-    pad_file.seek(std::io::SeekFrom::Start(header.1)).unwrap();
+    pad_file
+        .seek(std::io::SeekFrom::Start(header.records_offset))
+        .unwrap();
     let mut pad_reader = BufReader::new(pad_file);
 
     pad_file_2
-        .seek(std::io::SeekFrom::Start(header.0.record_data_offset))
+        .seek(std::io::SeekFrom::Start(header.record_data_offset))
         .unwrap();
     let mut data_reader = BufReader::new(pad_file_2);
 

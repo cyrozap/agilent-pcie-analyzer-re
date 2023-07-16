@@ -103,6 +103,7 @@ def main():
     pad_stream.seek(pad.record_data_offset)
     prev_timestamp_ns = 0
     io = pad._io
+    io.seek(pad.records_offset)
     for record_number in range(pad.first_record_number, pad.last_record_number + 1):
         record = agilent_pad.AgilentPad.Record(io, pad, pad)
         record_timestamp_ns = (record.timestamp_ns_hi << 32) | record.timestamp_ns_lo

@@ -28,15 +28,13 @@ seq:
     repeat: expr
     repeat-expr: 2
   - id: unk2
-    size: 12+8
+    size: 12
+  - id: records_offset
+    type: u8
   - id: record_data_offset
     type: u8
   - id: start
     type: string
-  # - id: records
-  #   type: record
-  #   repeat: expr
-  #   repeat-expr: last_record_number + 1 - first_record_number
 enums:
   tlp_fmt:
     0: tdw_no_data
@@ -159,6 +157,11 @@ types:
       - id: first_dw_be
         type: b4
 # instances:
+#   records:
+#     pos: records_offset
+#     type: record
+#     repeat: expr
+#     repeat-expr: last_record_number + 1 - first_record_number
 #   dllps:
 #     pos: record_data_offset
 #     size-eos: true

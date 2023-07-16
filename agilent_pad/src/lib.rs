@@ -89,6 +89,7 @@ pub struct PadHeader {
     pub guid: String,
     pub ports: Vec<String>,
     pub numbers2: Vec<u32>,
+    pub records_offset: u64,
     pub record_data_offset: u64,
     pub start: String,
 }
@@ -97,7 +98,7 @@ pub fn parse_string(input: &[u8]) -> IResult<&[u8], &[u8]> {
     length_data(be_u16)(input)
 }
 
-pub fn parse_header(pad_file: &mut File) -> Option<(PadHeader, u64)> {
+pub fn parse_header(pad_file: &mut File) -> Option<PadHeader> {
     let mut pad_reader = BufReader::new(pad_file);
     let mut buffer: Vec<u8> = vec![0; 0];
     let mut expand: usize = 0;
@@ -110,32 +111,31 @@ pub fn parse_header(pad_file: &mut File) -> Option<(PadHeader, u64)> {
             count(be_u32, 16),
             parse_string,
             count(parse_string, 2),
-            count(be_u32, 5),
+            count(be_u32, 3),
+            be_u64,
             be_u64,
             parse_string,
         ))(buffer.as_slice())
         {
             Ok((_, o)) => {
-                return Some((
-                    PadHeader {
-                        strings: o
-                            .0
-                            .into_iter()
-                            .map(|b| String::from_utf8_lossy(b).into())
-                            .collect::<Vec<_>>(),
-                        numbers: o.1,
-                        guid: String::from_utf8_lossy(o.2).into(),
-                        ports: o
-                            .3
-                            .into_iter()
-                            .map(|b| String::from_utf8_lossy(b).into())
-                            .collect::<Vec<_>>(),
-                        numbers2: o.4,
-                        record_data_offset: o.5,
-                        start: String::from_utf8_lossy(o.6).into(),
-                    },
-                    pad_reader.stream_position().unwrap(),
-                ))
+                return Some(PadHeader {
+                    strings: o
+                        .0
+                        .into_iter()
+                        .map(|b| String::from_utf8_lossy(b).into())
+                        .collect::<Vec<_>>(),
+                    numbers: o.1,
+                    guid: String::from_utf8_lossy(o.2).into(),
+                    ports: o
+                        .3
+                        .into_iter()
+                        .map(|b| String::from_utf8_lossy(b).into())
+                        .collect::<Vec<_>>(),
+                    numbers2: o.4,
+                    records_offset: o.5,
+                    record_data_offset: o.6,
+                    start: String::from_utf8_lossy(o.7).into(),
+                })
             }
             Err(nom::Err::Incomplete(nom::Needed::Size(n))) => expand = n.get(),
             _ => return None,
