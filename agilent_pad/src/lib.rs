@@ -90,6 +90,7 @@ pub struct PadHeader {
     pub last_record_number: u32,
     pub numbers1: Vec<u32>,
     pub timestamps_ns: Vec<u64>,
+    pub trigger_timestamp_ns: u64,
     pub guid: String,
     pub ports: Vec<String>,
     pub numbers2: Vec<u32>,
@@ -116,7 +117,8 @@ pub fn parse_header(pad_file: &mut File) -> Option<PadHeader> {
             be_u32,
             be_u32,
             count(be_u32, 2),
-            count(be_u64, 4),
+            count(be_u64, 3),
+            be_u64,
             parse_string,
             count(parse_string, 2),
             count(be_u32, 3),
@@ -137,16 +139,17 @@ pub fn parse_header(pad_file: &mut File) -> Option<PadHeader> {
                     last_record_number: o.3,
                     numbers1: o.4,
                     timestamps_ns: o.5,
-                    guid: String::from_utf8_lossy(o.6).into(),
+                    trigger_timestamp_ns: o.6,
+                    guid: String::from_utf8_lossy(o.7).into(),
                     ports: o
-                        .7
+                        .8
                         .into_iter()
                         .map(|b| String::from_utf8_lossy(b).into())
                         .collect::<Vec<_>>(),
-                    numbers2: o.8,
-                    records_offset: o.9,
-                    record_data_offset: o.10,
-                    start: String::from_utf8_lossy(o.11).into(),
+                    numbers2: o.9,
+                    records_offset: o.10,
+                    record_data_offset: o.11,
+                    start: String::from_utf8_lossy(o.12).into(),
                 })
             }
             Err(nom::Err::Incomplete(nom::Needed::Size(n))) => expand = n.get(),

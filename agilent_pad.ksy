@@ -24,7 +24,9 @@ seq:
   - id: timestamps_ns
     type: u8
     repeat: expr
-    repeat-expr: 4
+    repeat-expr: 3
+  - id: trigger_timestamp_ns
+    type: u8
   - id: guid
     type: string
   - id: ports
