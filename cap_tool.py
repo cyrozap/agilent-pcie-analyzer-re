@@ -106,7 +106,7 @@ def main():
     io.seek(pad.records_offset)
     for record_number in range(pad.first_record_number, pad.last_record_number + 1):
         record = agilent_pad.AgilentPad.Record(io, pad, pad)
-        record_timestamp_ns = (record.timestamp_ns_hi << 32) | record.timestamp_ns_lo
+        record_timestamp_ns = (record.timestamp_ns.hi << 32) | record.timestamp_ns.lo
         if record.number == 0 and record_timestamp_ns == 0 and record.data_length == 0:
             print("Encountered empty record, exiting...")
             break

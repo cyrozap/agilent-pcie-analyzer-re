@@ -43,6 +43,12 @@ enums:
     3: fdw_with_data
     4: tlp_prefix
 types:
+  u8le_split:
+    seq:
+      - id: hi
+        type: u4le
+      - id: lo
+        type: u4le
   string:
     seq:
       - id: len
@@ -61,10 +67,8 @@ types:
         type: u4le
       - id: unk1
         type: u4le
-      - id: timestamp_ns_hi
-        type: u4le
-      - id: timestamp_ns_lo
-        type: u4le
+      - id: timestamp_ns
+        type: u8le_split
       - id: unk3
         size: 2
       - id: bytes_valid
