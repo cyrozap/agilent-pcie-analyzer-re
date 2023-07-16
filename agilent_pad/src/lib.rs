@@ -24,7 +24,7 @@ use std::io::BufReader;
 
 use nom::bytes::streaming::take;
 use nom::multi::{count, length_data};
-use nom::number::streaming::{be_u16, be_u32, le_u16, le_u32};
+use nom::number::streaming::{be_u16, be_u32, be_u64, le_u16, le_u32};
 use nom::sequence::tuple;
 use nom::IResult;
 
@@ -89,6 +89,7 @@ pub struct PadHeader {
     pub guid: String,
     pub ports: Vec<String>,
     pub numbers2: Vec<u32>,
+    pub record_data_offset: u64,
     pub start: String,
 }
 
@@ -109,7 +110,8 @@ pub fn parse_header(pad_file: &mut File) -> Option<(PadHeader, u64)> {
             count(be_u32, 16),
             parse_string,
             count(parse_string, 2),
-            count(be_u32, 7),
+            count(be_u32, 5),
+            be_u64,
             parse_string,
         ))(buffer.as_slice())
         {
@@ -129,7 +131,8 @@ pub fn parse_header(pad_file: &mut File) -> Option<(PadHeader, u64)> {
                             .map(|b| String::from_utf8_lossy(b).into())
                             .collect::<Vec<_>>(),
                         numbers2: o.4,
-                        start: String::from_utf8_lossy(o.5).into(),
+                        record_data_offset: o.5,
+                        start: String::from_utf8_lossy(o.6).into(),
                     },
                     pad_reader.stream_position().unwrap(),
                 ))

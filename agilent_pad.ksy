@@ -28,9 +28,9 @@ seq:
     repeat: expr
     repeat-expr: 2
   - id: unk2
-    size: 16+8
+    size: 12+8
   - id: record_data_offset
-    type: u4
+    type: u8
   - id: start
     type: string
   # - id: records

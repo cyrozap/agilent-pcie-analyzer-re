@@ -83,13 +83,12 @@ fn main() {
 
     let first_record_number = header.0.numbers[4];
     let last_record_number = header.0.numbers[5];
-    let record_data_offset = header.0.numbers2[6];
 
     pad_file.seek(std::io::SeekFrom::Start(header.1)).unwrap();
     let mut pad_reader = BufReader::new(pad_file);
 
     pad_file_2
-        .seek(std::io::SeekFrom::Start(record_data_offset.into()))
+        .seek(std::io::SeekFrom::Start(header.0.record_data_offset))
         .unwrap();
     let mut data_reader = BufReader::new(pad_file_2);
 
