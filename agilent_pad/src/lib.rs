@@ -86,6 +86,8 @@ impl Record {
 pub struct PadHeader {
     pub strings: Vec<String>,
     pub numbers0: Vec<u32>,
+    pub trigger_record_number: u32,
+    pub three: u32,
     pub first_record_number: u32,
     pub last_record_number: u32,
     pub numbers1: Vec<u32>,
@@ -113,7 +115,9 @@ pub fn parse_header(pad_file: &mut File) -> Option<PadHeader> {
         //println!("bytes read: {}", bytes_read);
         match tuple((
             count(parse_string, 5),
-            count(be_u32, 4),
+            count(be_u32, 2),
+            be_u32,
+            be_u32,
             be_u32,
             be_u32,
             count(be_u32, 2),
@@ -135,21 +139,23 @@ pub fn parse_header(pad_file: &mut File) -> Option<PadHeader> {
                         .map(|b| String::from_utf8_lossy(b).into())
                         .collect::<Vec<_>>(),
                     numbers0: o.1,
-                    first_record_number: o.2,
-                    last_record_number: o.3,
-                    numbers1: o.4,
-                    timestamps_ns: o.5,
-                    trigger_timestamp_ns: o.6,
-                    guid: String::from_utf8_lossy(o.7).into(),
+                    trigger_record_number: o.2,
+                    three: o.3,
+                    first_record_number: o.4,
+                    last_record_number: o.5,
+                    numbers1: o.6,
+                    timestamps_ns: o.7,
+                    trigger_timestamp_ns: o.8,
+                    guid: String::from_utf8_lossy(o.9).into(),
                     ports: o
-                        .8
+                        .10
                         .into_iter()
                         .map(|b| String::from_utf8_lossy(b).into())
                         .collect::<Vec<_>>(),
-                    numbers2: o.9,
-                    records_offset: o.10,
-                    record_data_offset: o.11,
-                    start: String::from_utf8_lossy(o.12).into(),
+                    numbers2: o.11,
+                    records_offset: o.12,
+                    record_data_offset: o.13,
+                    start: String::from_utf8_lossy(o.14).into(),
                 })
             }
             Err(nom::Err::Incomplete(nom::Needed::Size(n))) => expand = n.get(),

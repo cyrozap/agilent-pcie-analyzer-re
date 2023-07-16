@@ -12,7 +12,11 @@ seq:
   - id: unk0
     type: u4
     repeat: expr
-    repeat-expr: 4
+    repeat-expr: 2
+  - id: trigger_record_number
+    type: u4
+  - id: three
+    type: u4
   - id: first_record_number
     type: u4
   - id: last_record_number
