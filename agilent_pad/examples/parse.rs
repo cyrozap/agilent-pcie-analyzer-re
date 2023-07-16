@@ -140,10 +140,9 @@ fn main() {
         };
 
         let debug_data = format!(
-            " (unk0: 0x{:08x}, unk1: 0x{:08x}, unk2: 0x{:08x}, unk3: {:02x}{:02x}, bytes_valid: {} ({}), flags: 0x{:08x}, data_offset: {})",
+            " (unk0: 0x{:08x}, unk1: 0x{:08x}, unk3: {:02x}{:02x}, bytes_valid: {} ({}), flags: 0x{:08x}, data_offset: {})",
             record.unk0,
             record.unk1,
-            record.unk2,
             record.unk3[0],
             record.unk3[1],
             record.data_valid_count,

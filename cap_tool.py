@@ -105,14 +105,15 @@ def main():
     io = pad._io
     for record_number in range(pad.first_record_number, pad.last_record_number + 1):
         record = agilent_pad.AgilentPad.Record(io, pad, pad)
-        if record.number == 0 and record.timestamp_ns == 0 and record.data_length == 0:
+        record_timestamp_ns = (record.timestamp_ns_hi << 32) | record.timestamp_ns_lo
+        if record.number == 0 and record_timestamp_ns == 0 and record.data_length == 0:
             print("Encountered empty record, exiting...")
             break
         assert record_number == record.number
         record_data = pad_stream.read(record.data_length)
 
-        ts_ns_int = record.timestamp_ns // 1000000000
-        ts_ns_frac = record.timestamp_ns % 1000000000
+        ts_ns_int = record_timestamp_ns // 1000000000
+        ts_ns_frac = record_timestamp_ns % 1000000000
         bytes_valid = record.bytes_valid & 0x7ff
         bytes_valid_flag = record.bytes_valid >> 15
 
@@ -128,8 +129,8 @@ def main():
 
         debug_data = ""
         if args.debug:
-            debug_data = " (unk0: 0x{:08x}, unk1: 0x{:08x}, unk2: 0x{:08x}, unk3: {}, bytes_valid: {} ({}), flags: 0x{:08x}, data_offset: {})".format(
-                record.unk0, record.unk1, record.unk2, record.unk3.hex(),
+            debug_data = " (unk0: 0x{:08x}, unk1: 0x{:08x}, unk3: {}, bytes_valid: {} ({}), flags: 0x{:08x}, data_offset: {})".format(
+                record.unk0, record.unk1, record.unk3.hex(),
                 bytes_valid, bytes_valid_flag, record.flags,
                 record.data_offset)
 
@@ -155,15 +156,15 @@ def main():
             display_data = valid_data.hex()
 
         if not prev_timestamp_ns:
-            prev_timestamp_ns = record.timestamp_ns
+            prev_timestamp_ns = record_timestamp_ns
 
         print("{} Record {} @ {}.{:09d}s (+{:d}ns){}: {}".format(
             "US" if get_bit(record.flags, 28) else "DS",
             record.number, ts_ns_int, ts_ns_frac,
-            max(record.timestamp_ns - prev_timestamp_ns, 0),
+            max(record_timestamp_ns - prev_timestamp_ns, 0),
             debug_data, display_data))
 
-        prev_timestamp_ns = record.timestamp_ns
+        prev_timestamp_ns = record_timestamp_ns
 
 
 if __name__ == "__main__":

@@ -63,9 +63,9 @@ types:
         type: u4le
       - id: unk1
         type: u4le
-      - id: unk2
+      - id: timestamp_ns_hi
         type: u4le
-      - id: timestamp_ns
+      - id: timestamp_ns_lo
         type: u4le
       - id: unk3
         size: 2
