@@ -1,7 +1,6 @@
 meta:
   id: agilent_pad
   file-extension: pad
-  endian: be
   title: Agilent PCIe Protocol Analyzer Data
   license: CC0-1.0
 seq:
@@ -10,27 +9,27 @@ seq:
     repeat: expr
     repeat-expr: 5
   - id: unk0
-    type: u4
+    type: u4be
     repeat: expr
     repeat-expr: 2
   - id: trigger_record_number
-    type: u4
+    type: u4be
   - id: three
-    type: u4
+    type: u4be
   - id: first_record_number
-    type: u4
+    type: u4be
   - id: last_record_number
-    type: u4
+    type: u4be
   - id: unk1
-    type: u4
+    type: u4be
     repeat: expr
     repeat-expr: 2
   - id: timestamps_ns
-    type: u8
+    type: u8be
     repeat: expr
     repeat-expr: 3
   - id: trigger_timestamp_ns
-    type: u8
+    type: u8be
   - id: guid
     type: string
   - id: ports
@@ -40,9 +39,9 @@ seq:
   - id: unk2
     size: 12
   - id: records_offset
-    type: u8
+    type: u8be
   - id: record_data_offset
-    type: u8
+    type: u8be
   - id: start
     type: string
 enums:
@@ -62,7 +61,7 @@ types:
   string:
     seq:
       - id: len
-        type: u2
+        type: u2be
       - id: str
         size: len
         type: str
@@ -106,7 +105,7 @@ types:
       - id: tlp
         type: tlp
       - id: lcrc
-        type: u4
+        type: u4be
       - id: end_tag
         type: u1
   tlp:
@@ -121,15 +120,15 @@ types:
         type:
           switch-on: header.fmt
           cases:
-            tlp_fmt::tdw_no_data: u4
-            tlp_fmt::tdw_with_data: u4
-            tlp_fmt::fdw_no_data: u8
-            tlp_fmt::fdw_with_data: u8
+            tlp_fmt::tdw_no_data: u4be
+            tlp_fmt::tdw_with_data: u4be
+            tlp_fmt::fdw_no_data: u8be
+            tlp_fmt::fdw_with_data: u8be
       - id: data
         size: 4 * header.len
         if: '(header.fmt == tlp_fmt::tdw_with_data) or (header.fmt == tlp_fmt::fdw_with_data)'
       - id: ecrc
-        type: u4
+        type: u4be
         if: header.td
   tlp_header:
     seq:
@@ -163,7 +162,7 @@ types:
   next_header:
     seq:
       - id: requester
-        type: u2
+        type: u2be
       - id: tag
         type: u1
       - id: last_dw_be
