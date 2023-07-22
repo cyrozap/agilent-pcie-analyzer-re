@@ -32,7 +32,7 @@ seq:
     type: u8be
   - id: guid
     type: string
-  - id: ports
+  - id: channels
     type: string
     repeat: expr
     repeat-expr: 2

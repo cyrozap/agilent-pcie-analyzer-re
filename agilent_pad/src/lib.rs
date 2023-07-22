@@ -93,7 +93,7 @@ pub struct PadHeader {
     pub timestamps_ns: Vec<u64>,
     pub trigger_timestamp_ns: u64,
     pub guid: String,
-    pub ports: Vec<String>,
+    pub channels: Vec<String>,
     pub numbers2: Vec<u32>,
     pub records_offset: u64,
     pub record_data_offset: u64,
@@ -146,7 +146,7 @@ pub fn parse_header(pad_file: &mut File) -> Option<PadHeader> {
                     timestamps_ns: o.7,
                     trigger_timestamp_ns: o.8,
                     guid: String::from_utf8_lossy(o.9).into(),
-                    ports: o
+                    channels: o
                         .10
                         .into_iter()
                         .map(|b| String::from_utf8_lossy(b).into())
