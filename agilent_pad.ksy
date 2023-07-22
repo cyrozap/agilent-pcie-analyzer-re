@@ -48,7 +48,7 @@ seq:
   - id: guid
     type: string
     doc: "The GUID to use to match the PAD file with the capture session configuration file."
-  - id: channels
+  - id: channel_names
     type: string
     repeat: expr
     repeat-expr: 2

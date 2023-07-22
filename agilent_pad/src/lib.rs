@@ -90,6 +90,12 @@ pub struct TimestampsNs {
 }
 
 #[derive(Debug)]
+pub struct ChannelNames {
+    pub a: String,
+    pub b: String,
+}
+
+#[derive(Debug)]
 pub struct PadHeader {
     pub module_type: String,
     pub port_id: String,
@@ -105,7 +111,7 @@ pub struct PadHeader {
     pub timestamp_array_size: u32,
     pub timestamps_ns: TimestampsNs,
     pub guid: String,
-    pub channels: Vec<String>,
+    pub channel_names: ChannelNames,
     pub numbers2: Vec<u32>,
     pub records_offset: u64,
     pub record_data_offset: u64,
@@ -166,11 +172,10 @@ pub fn parse_header(pad_file: &mut File) -> Option<PadHeader> {
                         trigger: o.11,
                     },
                     guid: String::from_utf8_lossy(o.12).into(),
-                    channels: o
-                        .13
-                        .into_iter()
-                        .map(|b| String::from_utf8_lossy(b).into())
-                        .collect::<Vec<_>>(),
+                    channel_names: ChannelNames {
+                        a: String::from_utf8_lossy(o.13[0]).into(),
+                        b: String::from_utf8_lossy(o.13[1]).into(),
+                    },
                     numbers2: o.14,
                     records_offset: o.15,
                     record_data_offset: o.16,
