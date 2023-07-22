@@ -81,6 +81,12 @@ fn main() {
     let header = parse_header(&mut pad_file).unwrap();
     println!("{:?}", header);
 
+    assert_eq!(header.record_len, 40, "record length mismatch");
+    assert_eq!(
+        header.timestamp_array_size, 8,
+        "timestamp array size mismatch"
+    );
+
     pad_file
         .seek(std::io::SeekFrom::Start(header.records_offset))
         .unwrap();

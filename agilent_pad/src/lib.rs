@@ -89,7 +89,8 @@ pub struct PadHeader {
     pub three: u32,
     pub first_record_number: u32,
     pub last_record_number: u32,
-    pub numbers1: Vec<u32>,
+    pub record_len: u32,
+    pub timestamp_array_size: u32,
     pub timestamps_ns: Vec<u64>,
     pub trigger_timestamp_ns: u64,
     pub guid: String,
@@ -119,7 +120,8 @@ pub fn parse_header(pad_file: &mut File) -> Option<PadHeader> {
             be_u32,
             be_u32,
             be_u32,
-            count(be_u32, 2),
+            be_u32,
+            be_u32,
             count(be_u64, 3),
             be_u64,
             parse_string,
@@ -142,19 +144,20 @@ pub fn parse_header(pad_file: &mut File) -> Option<PadHeader> {
                     three: o.3,
                     first_record_number: o.4,
                     last_record_number: o.5,
-                    numbers1: o.6,
-                    timestamps_ns: o.7,
-                    trigger_timestamp_ns: o.8,
-                    guid: String::from_utf8_lossy(o.9).into(),
+                    record_len: o.6,
+                    timestamp_array_size: o.7,
+                    timestamps_ns: o.8,
+                    trigger_timestamp_ns: o.9,
+                    guid: String::from_utf8_lossy(o.10).into(),
                     channels: o
-                        .10
+                        .11
                         .into_iter()
                         .map(|b| String::from_utf8_lossy(b).into())
                         .collect::<Vec<_>>(),
-                    numbers2: o.11,
-                    records_offset: o.12,
-                    record_data_offset: o.13,
-                    start: String::from_utf8_lossy(o.14).into(),
+                    numbers2: o.12,
+                    records_offset: o.13,
+                    record_data_offset: o.14,
+                    start: String::from_utf8_lossy(o.15).into(),
                 })
             }
             Err(nom::Err::Incomplete(nom::Needed::Size(n))) => expand = n.get(),

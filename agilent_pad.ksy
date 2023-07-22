@@ -20,10 +20,10 @@ seq:
     type: u4be
   - id: last_record_number
     type: u4be
-  - id: unk1
+  - id: record_len
     type: u4be
-    repeat: expr
-    repeat-expr: 2
+  - id: timestamp_array_size
+    type: u4be
   - id: timestamps_ns
     type: u8be
     repeat: expr
