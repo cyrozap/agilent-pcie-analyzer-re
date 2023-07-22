@@ -91,7 +91,11 @@ pub struct TimestampsNs {
 
 #[derive(Debug)]
 pub struct PadHeader {
-    pub strings: Vec<String>,
+    pub module_type: String,
+    pub port_id: String,
+    pub rx_or_tx: String,
+    pub description: String,
+    pub format_code: String,
     pub numbers0: Vec<u32>,
     pub trigger_record_number: u32,
     pub three: u32,
@@ -143,11 +147,11 @@ pub fn parse_header(pad_file: &mut File) -> Option<PadHeader> {
         {
             Ok((_, o)) => {
                 return Some(PadHeader {
-                    strings: o
-                        .0
-                        .into_iter()
-                        .map(|b| String::from_utf8_lossy(b).into())
-                        .collect::<Vec<_>>(),
+                    module_type: String::from_utf8_lossy(o.0[0]).into(),
+                    port_id: String::from_utf8_lossy(o.0[1]).into(),
+                    rx_or_tx: String::from_utf8_lossy(o.0[2]).into(),
+                    description: String::from_utf8_lossy(o.0[3]).into(),
+                    format_code: String::from_utf8_lossy(o.0[4]).into(),
                     numbers0: o.1,
                     trigger_record_number: o.2,
                     three: o.3,

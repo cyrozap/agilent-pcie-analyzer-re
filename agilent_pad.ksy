@@ -5,10 +5,16 @@ meta:
   application: Agilent System Protocol Tester
   license: CC0-1.0
 seq:
-  - id: strings
+  - id: module_type
     type: string
-    repeat: expr
-    repeat-expr: 5
+  - id: port_id
+    type: string
+  - id: rx_or_tx
+    type: string
+  - id: description
+    type: string
+  - id: format_code
+    type: string
   - id: unk0
     type: u4be
     repeat: expr
