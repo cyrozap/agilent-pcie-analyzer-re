@@ -103,7 +103,7 @@ fn main() {
 
         let record = Record::from_slice(&record_buffer).unwrap();
 
-        assert_eq!(record.number, record_number);
+        assert_eq!(record.number, record_number, "record number mismatch");
 
         let us_ds = match get_bit(record.flags, 28) {
             true => "US",
