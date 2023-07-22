@@ -30,10 +30,12 @@ seq:
   - id: timestamp_array_size
     type: u4be
     doc: "The number of 32-bit words in the array of timestamps that follows. Must be 8."
-  - id: timestamps_ns
+  - id: first_timestamp_ns
     type: u8be
-    repeat: expr
-    repeat-expr: 3
+  - id: last_timestamp_ns
+    type: u8be
+  - id: stop_timestamp_ns
+    type: u8be
   - id: trigger_timestamp_ns
     type: u8be
     doc: "The timestamp at which the trigger was was hit."
