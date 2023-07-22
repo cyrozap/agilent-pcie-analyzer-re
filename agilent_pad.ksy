@@ -80,12 +80,16 @@ types:
     seq:
       - id: number
         type: u4le
+        doc: "The unique, sequential number of this record."
       - id: data_length
         type: u4le
+        doc: "The total number of bytes of data associated with this record."
       - id: count
         type: u8le_split
+        doc: "The number of times between this record and the next that the pattern in this record was seen. Fibre Channel (FC) only--for PCIe and ASI this field is always set to 1. The difference appears to be that both sides of a FC link are continually transmitting even when the link is idle, while PCIe devices (and the PCIe-based ASI) generally don't transmit (much) when they don't have any data to send."
       - id: timestamp_ns
         type: u8le_split
+        doc: "The relative timestamp this record was captured at."
       - id: unk3
         size: 2
       - id: bytes_valid
