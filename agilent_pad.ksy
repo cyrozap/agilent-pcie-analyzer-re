@@ -1,7 +1,8 @@
 meta:
   id: agilent_pad
   file-extension: pad
-  title: Agilent PCIe Protocol Analyzer Data
+  title: Agilent PAD (Protocol Analyzer Data) file
+  application: Agilent System Protocol Tester
   license: CC0-1.0
 seq:
   - id: strings
