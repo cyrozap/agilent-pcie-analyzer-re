@@ -96,6 +96,27 @@ pub struct ChannelNames {
 }
 
 #[derive(Debug)]
+pub struct CoarseTimestamp {
+    pub hour: u16,
+    pub minute: u16,
+    pub millisec: u16,
+}
+
+impl CoarseTimestamp {
+    pub fn from_slice(input: &[u16]) -> Self {
+        Self {
+            hour: input[0],
+            minute: input[1],
+            millisec: input[2],
+        }
+    }
+
+    pub fn is_null(&self) -> bool {
+        self.hour == 0 && self.minute == 0 && self.millisec == 0
+    }
+}
+
+#[derive(Debug)]
 pub struct PadHeader {
     pub module_type: String,
     pub port_id: String,
@@ -112,7 +133,8 @@ pub struct PadHeader {
     pub timestamps_ns: TimestampsNs,
     pub guid: String,
     pub channel_names: ChannelNames,
-    pub numbers2: Vec<u32>,
+    pub start_time: CoarseTimestamp,
+    pub stop_time: CoarseTimestamp,
     pub records_offset: u64,
     pub record_data_offset: u64,
     pub start: String,
@@ -145,7 +167,7 @@ pub fn parse_header(pad_file: &mut File) -> Option<PadHeader> {
             be_u64,
             parse_string,
             count(parse_string, 2),
-            count(be_u32, 3),
+            count(be_u16, 6),
             be_u64,
             be_u64,
             parse_string,
@@ -176,7 +198,8 @@ pub fn parse_header(pad_file: &mut File) -> Option<PadHeader> {
                         a: String::from_utf8_lossy(o.13[0]).into(),
                         b: String::from_utf8_lossy(o.13[1]).into(),
                     },
-                    numbers2: o.14,
+                    start_time: CoarseTimestamp::from_slice(&o.14[..3]),
+                    stop_time: CoarseTimestamp::from_slice(&o.14[3..]),
                     records_offset: o.15,
                     record_data_offset: o.16,
                     start: String::from_utf8_lossy(o.17).into(),

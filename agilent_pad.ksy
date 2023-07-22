@@ -53,8 +53,10 @@ seq:
     repeat: expr
     repeat-expr: 2
     doc: "The names of the capture channels."
-  - id: unk2
-    size: 12
+  - id: start_time
+    type: coarse_timestamp
+  - id: stop_time
+    type: coarse_timestamp
   - id: records_offset
     type: u8be
     doc: "The byte offset of the array of fixed-length records."
@@ -71,6 +73,14 @@ enums:
     3: fdw_with_data
     4: tlp_prefix
 types:
+  coarse_timestamp:
+    seq:
+      - id: hour
+        type: u2be
+      - id: minute
+        type: u2be
+      - id: millisec
+        type: u2be
   u8le_split:
     seq:
       - id: hi
