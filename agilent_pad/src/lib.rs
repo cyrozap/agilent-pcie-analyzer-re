@@ -36,7 +36,7 @@ fn u32_hi_lo_to_u64(hi: u32, lo: u32) -> u64 {
 pub struct Record {
     pub number: u32,
     pub data_len: u32,
-    pub unk0: u64,
+    pub count: u64,
     pub timestamp_ns: u64,
     pub unk3: [u8; 2],
     pub data_valid: bool,
@@ -68,7 +68,7 @@ impl Record {
             Ok((_, o)) => Some(Self {
                 number: o.0,
                 data_len: o.1,
-                unk0: u32_hi_lo_to_u64(o.2, o.3),
+                count: u32_hi_lo_to_u64(o.2, o.3),
                 timestamp_ns: u32_hi_lo_to_u64(o.4, o.5),
                 unk3: o.6.try_into().unwrap(),
                 data_valid: (o.7 & 0x8000) != 0,

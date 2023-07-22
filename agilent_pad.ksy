@@ -72,7 +72,7 @@ types:
         type: u4le
       - id: data_length
         type: u4le
-      - id: unk0
+      - id: count
         type: u8le_split
       - id: timestamp_ns
         type: u8le_split
