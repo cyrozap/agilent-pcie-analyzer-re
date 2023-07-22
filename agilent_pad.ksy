@@ -14,34 +14,44 @@ seq:
     repeat-expr: 2
   - id: trigger_record_number
     type: u4be
+    doc: "The number of the record that the trigger information should be associated with."
   - id: three
     type: u4be
   - id: first_record_number
     type: u4be
+    doc: "The number of the first record contained in this file."
   - id: last_record_number
     type: u4be
+    doc: "The number of the last record contained in this file."
   - id: record_len
     type: u4be
+    doc: "The length of each of the fixed-length records in bytes. Must be 40."
   - id: timestamp_array_size
     type: u4be
+    doc: "The number of 32-bit words in the array of timestamps that follows. Must be 8."
   - id: timestamps_ns
     type: u8be
     repeat: expr
     repeat-expr: 3
   - id: trigger_timestamp_ns
     type: u8be
+    doc: "The timestamp at which the trigger was was hit."
   - id: guid
     type: string
+    doc: "The GUID to use to match the PAD file with the capture session configuration file."
   - id: channels
     type: string
     repeat: expr
     repeat-expr: 2
+    doc: "The names of the capture channels."
   - id: unk2
     size: 12
   - id: records_offset
     type: u8be
+    doc: "The byte offset of the array of fixed-length records."
   - id: record_data_offset
     type: u8be
+    doc: "The byte offset of the variable-length data."
   - id: start
     type: string
 enums:
