@@ -74,9 +74,9 @@ static int HF_PCIE_DISPARITY_ERROR = -1;
 static int HF_PCIE_DIRECTION = -1;
 
 static int HF_PCIE_FRAME_START_TAG = -1;
-static int HF_PCIE_FRAME_RESERVED = -1;
-static int HF_PCIE_FRAME_SEQ = -1;
-static int HF_PCIE_FRAME_LCRC = -1;
+static int HF_PCIE_FRAME_TLP_RESERVED = -1;
+static int HF_PCIE_FRAME_TLP_SEQ = -1;
+static int HF_PCIE_FRAME_TLP_LCRC = -1;
 static int HF_PCIE_FRAME_END_TAG = -1;
 
 static hf_register_info HF_PCIE[] = {
@@ -137,20 +137,20 @@ static hf_register_info HF_PCIE_FRAME[] = {
         VALS(K_SYMBOLS), 0x0,
         NULL, HFILL }
     },
-    { &HF_PCIE_FRAME_RESERVED,
-        { "Reserved", "pcie.frame.reserved",
+    { &HF_PCIE_FRAME_TLP_RESERVED,
+        { "TLP Reserved", "pcie.frame.tlp.reserved",
         FT_UINT16, BASE_HEX,
         NULL, 0xF000,
         NULL, HFILL }
     },
-    { &HF_PCIE_FRAME_SEQ,
-        { "Sequence Number", "pcie.frame.seq",
+    { &HF_PCIE_FRAME_TLP_SEQ,
+        { "TLP Sequence Number", "pcie.frame.tlp.seq",
         FT_UINT16, BASE_DEC,
         NULL, 0x0FFF,
         NULL, HFILL }
     },
-    { &HF_PCIE_FRAME_LCRC,
-        { "LCRC", "pcie.frame.lcrc",
+    { &HF_PCIE_FRAME_TLP_LCRC,
+        { "TLP LCRC", "pcie.frame.tlp.lcrc",
         FT_UINT32, BASE_HEX,
         NULL, 0x0,
         NULL, HFILL }
@@ -215,9 +215,9 @@ static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
         return tvb_captured_length(tvb);
     }
 
-    proto_tree_add_item(frame_tree, HF_PCIE_FRAME_RESERVED, frame_tvb, 1, 2, ENC_BIG_ENDIAN);
-    proto_tree_add_item(frame_tree, HF_PCIE_FRAME_SEQ, frame_tvb, 1, 2, ENC_BIG_ENDIAN);
-    proto_tree_add_item(frame_tree, HF_PCIE_FRAME_LCRC, frame_tvb, data_valid_count-5, 4, ENC_BIG_ENDIAN);
+    proto_tree_add_item(frame_tree, HF_PCIE_FRAME_TLP_RESERVED, frame_tvb, 1, 2, ENC_BIG_ENDIAN);
+    proto_tree_add_item(frame_tree, HF_PCIE_FRAME_TLP_SEQ, frame_tvb, 1, 2, ENC_BIG_ENDIAN);
+    proto_tree_add_item(frame_tree, HF_PCIE_FRAME_TLP_LCRC, frame_tvb, data_valid_count-5, 4, ENC_BIG_ENDIAN);
     proto_tree_add_item(frame_tree, HF_PCIE_FRAME_END_TAG, frame_tvb, data_valid_count-1, 1, ENC_BIG_ENDIAN);
 
     col_set_str(pinfo->cinfo, COL_PROTOCOL, "PCIe Frame");
