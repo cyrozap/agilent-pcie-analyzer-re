@@ -26,6 +26,7 @@
 
 static const int PCIE_CAPTURE_HEADER_SIZE = 20;
 
+static dissector_handle_t PCIE_HANDLE = NULL;
 
 static int PROTO_PCIE = -1;
 static int PROTO_PCIE_DLLP = -1;
@@ -200,6 +201,8 @@ static void proto_register_pcie_capture() {
     );
 
     proto_register_field_array(PROTO_PCIE, HF_PCIE, array_length(HF_PCIE));
+
+    PCIE_HANDLE = register_dissector("pcie", dissect_pcie, PROTO_PCIE);
 }
 
 static void proto_register_pcie_dllp() {
@@ -221,6 +224,8 @@ static void proto_register_pcie_tlp() {
 }
 
 void proto_register_pcie() {
+    proto_register_subtree_array(ETT, array_length(ETT));
+
     // PCIe Capture
     proto_register_pcie_capture();
 
@@ -229,11 +234,8 @@ void proto_register_pcie() {
 
     // PCIe TLP
     proto_register_pcie_tlp();
-
-    proto_register_subtree_array(ETT, array_length(ETT));
 }
 
 void proto_reg_handoff_pcie() {
-    dissector_handle_t pcie_handle = create_dissector_handle(dissect_pcie, PROTO_PCIE);
-    dissector_add_uint("wtap_encap", WTAP_ENCAP_USER11, pcie_handle);
+    dissector_add_uint("wtap_encap", WTAP_ENCAP_USER11, PCIE_HANDLE);
 }
