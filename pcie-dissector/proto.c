@@ -61,7 +61,7 @@ static const value_string K_SYMBOLS[] = {
 static dissector_handle_t PCIE_HANDLE = NULL;
 
 static int PROTO_PCIE = -1;
-static int PROTO_PCIE_DLLP = -1;
+static int PROTO_PCIE_FRAME = -1;
 static int PROTO_PCIE_TLP = -1;
 
 static int HF_PCIE_RECORD = -1;
@@ -73,11 +73,11 @@ static int HF_PCIE_SYMBOL_ERROR = -1;
 static int HF_PCIE_DISPARITY_ERROR = -1;
 static int HF_PCIE_DIRECTION = -1;
 
-static int HF_PCIE_DLLP_START_TAG = -1;
-static int HF_PCIE_DLLP_RESERVED = -1;
-static int HF_PCIE_DLLP_SEQ = -1;
-static int HF_PCIE_DLLP_LCRC = -1;
-static int HF_PCIE_DLLP_END_TAG = -1;
+static int HF_PCIE_FRAME_START_TAG = -1;
+static int HF_PCIE_FRAME_RESERVED = -1;
+static int HF_PCIE_FRAME_SEQ = -1;
+static int HF_PCIE_FRAME_LCRC = -1;
+static int HF_PCIE_FRAME_END_TAG = -1;
 
 static hf_register_info HF_PCIE[] = {
     { &HF_PCIE_RECORD,
@@ -130,33 +130,33 @@ static hf_register_info HF_PCIE[] = {
     },
 };
 
-static hf_register_info HF_PCIE_DLLP[] = {
-    { &HF_PCIE_DLLP_START_TAG,
-        { "Start Tag", "pcie.dllp.start_tag",
+static hf_register_info HF_PCIE_FRAME[] = {
+    { &HF_PCIE_FRAME_START_TAG,
+        { "Start Tag", "pcie.frame.start_tag",
         FT_UINT8, BASE_HEX,
         VALS(K_SYMBOLS), 0x0,
         NULL, HFILL }
     },
-    { &HF_PCIE_DLLP_RESERVED,
-        { "Reserved", "pcie.dllp.reserved",
+    { &HF_PCIE_FRAME_RESERVED,
+        { "Reserved", "pcie.frame.reserved",
         FT_UINT16, BASE_HEX,
         NULL, 0xF000,
         NULL, HFILL }
     },
-    { &HF_PCIE_DLLP_SEQ,
-        { "Sequence Number", "pcie.dllp.seq",
+    { &HF_PCIE_FRAME_SEQ,
+        { "Sequence Number", "pcie.frame.seq",
         FT_UINT16, BASE_DEC,
         NULL, 0x0FFF,
         NULL, HFILL }
     },
-    { &HF_PCIE_DLLP_LCRC,
-        { "LCRC", "pcie.dllp.lcrc",
+    { &HF_PCIE_FRAME_LCRC,
+        { "LCRC", "pcie.frame.lcrc",
         FT_UINT32, BASE_HEX,
         NULL, 0x0,
         NULL, HFILL }
     },
-    { &HF_PCIE_DLLP_END_TAG,
-        { "End Tag", "pcie.dllp.end_tag",
+    { &HF_PCIE_FRAME_END_TAG,
+        { "End Tag", "pcie.frame.end_tag",
         FT_UINT8, BASE_HEX,
         VALS(K_SYMBOLS), 0x0,
         NULL, HFILL }
@@ -164,10 +164,10 @@ static hf_register_info HF_PCIE_DLLP[] = {
 };
 
 static int ETT_PCIE = -1;
-static int ETT_PCIE_DLLP = -1;
+static int ETT_PCIE_FRAME = -1;
 static int * const ETT[] = {
         &ETT_PCIE,
-        &ETT_PCIE_DLLP,
+        &ETT_PCIE_FRAME,
 };
 
 
@@ -204,23 +204,23 @@ static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
         return tvb_captured_length(tvb);
     }
 
-    tvbuff_t * dllp_tvb = tvb_new_subset_length_caplen(tvb, PCIE_CAPTURE_HEADER_SIZE, data_valid_count, data_valid_count);
-    proto_item * dllp_tree_item = proto_tree_add_item(tree, PROTO_PCIE_DLLP, dllp_tvb, 0, data_valid_count, ENC_NA);
-    proto_tree * dllp_tree = proto_item_add_subtree(dllp_tree_item, ETT_PCIE_DLLP);
+    tvbuff_t * frame_tvb = tvb_new_subset_length_caplen(tvb, PCIE_CAPTURE_HEADER_SIZE, data_valid_count, data_valid_count);
+    proto_item * frame_tree_item = proto_tree_add_item(tree, PROTO_PCIE_FRAME, frame_tvb, 0, data_valid_count, ENC_NA);
+    proto_tree * frame_tree = proto_item_add_subtree(frame_tree_item, ETT_PCIE_FRAME);
 
     uint32_t start_tag = 0;
-    proto_tree_add_item_ret_uint(dllp_tree, HF_PCIE_DLLP_START_TAG, dllp_tvb, 0, 1, ENC_BIG_ENDIAN, &start_tag);
+    proto_tree_add_item_ret_uint(frame_tree, HF_PCIE_FRAME_START_TAG, frame_tvb, 0, 1, ENC_BIG_ENDIAN, &start_tag);
 
     if (start_tag != 0xfb) {
         return tvb_captured_length(tvb);
     }
 
-    proto_tree_add_item(dllp_tree, HF_PCIE_DLLP_RESERVED, dllp_tvb, 1, 2, ENC_BIG_ENDIAN);
-    proto_tree_add_item(dllp_tree, HF_PCIE_DLLP_SEQ, dllp_tvb, 1, 2, ENC_BIG_ENDIAN);
-    proto_tree_add_item(dllp_tree, HF_PCIE_DLLP_LCRC, dllp_tvb, data_valid_count-5, 4, ENC_BIG_ENDIAN);
-    proto_tree_add_item(dllp_tree, HF_PCIE_DLLP_END_TAG, dllp_tvb, data_valid_count-1, 1, ENC_BIG_ENDIAN);
+    proto_tree_add_item(frame_tree, HF_PCIE_FRAME_RESERVED, frame_tvb, 1, 2, ENC_BIG_ENDIAN);
+    proto_tree_add_item(frame_tree, HF_PCIE_FRAME_SEQ, frame_tvb, 1, 2, ENC_BIG_ENDIAN);
+    proto_tree_add_item(frame_tree, HF_PCIE_FRAME_LCRC, frame_tvb, data_valid_count-5, 4, ENC_BIG_ENDIAN);
+    proto_tree_add_item(frame_tree, HF_PCIE_FRAME_END_TAG, frame_tvb, data_valid_count-1, 1, ENC_BIG_ENDIAN);
 
-    col_set_str(pinfo->cinfo, COL_PROTOCOL, "PCIe DLLP");
+    col_set_str(pinfo->cinfo, COL_PROTOCOL, "PCIe Frame");
 
     return tvb_captured_length(tvb);
 }
@@ -237,14 +237,14 @@ static void proto_register_pcie_capture() {
     PCIE_HANDLE = register_dissector("pcie", dissect_pcie, PROTO_PCIE);
 }
 
-static void proto_register_pcie_dllp() {
-    PROTO_PCIE_DLLP = proto_register_protocol(
-        "PCI Express Data Link Layer Packet",
-        "PCIe DLLP",
-        "pcie.dllp"
+static void proto_register_pcie_frame() {
+    PROTO_PCIE_FRAME = proto_register_protocol(
+        "PCI Express Frame",
+        "PCIe Frame",
+        "pcie.frame"
     );
 
-    proto_register_field_array(PROTO_PCIE_DLLP, HF_PCIE_DLLP, array_length(HF_PCIE_DLLP));
+    proto_register_field_array(PROTO_PCIE_FRAME, HF_PCIE_FRAME, array_length(HF_PCIE_FRAME));
 }
 
 static void proto_register_pcie_tlp() {
@@ -261,8 +261,8 @@ void proto_register_pcie() {
     // PCIe Capture
     proto_register_pcie_capture();
 
-    // PCIe DLLP
-    proto_register_pcie_dllp();
+    // PCIe Frame
+    proto_register_pcie_frame();
 
     // PCIe TLP
     proto_register_pcie_tlp();
