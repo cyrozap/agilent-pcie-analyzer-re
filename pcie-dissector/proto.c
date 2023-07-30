@@ -26,6 +26,8 @@
 
 static const int PCIE_CAPTURE_HEADER_SIZE = 20;
 
+static const true_false_string tfs_direction = { "Upstream", "Downstream" };
+
 // 8b/10b Special Character Symbols
 static const uint32_t K_28_0 = 0x1C;
 static const uint32_t K_28_1 = 0x3C;
@@ -123,7 +125,7 @@ static hf_register_info HF_PCIE[] = {
     { &HF_PCIE_DIRECTION,
         { "Direction", "pcie.direction",
         FT_BOOLEAN, 32,
-        NULL, 0x10000000,
+        TFS(&tfs_direction), 0x10000000,
         NULL, HFILL }
     },
 };
