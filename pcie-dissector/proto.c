@@ -26,6 +26,36 @@
 
 static const int PCIE_CAPTURE_HEADER_SIZE = 20;
 
+// 8b/10b Special Character Symbols
+static const uint32_t K_28_0 = 0x1C;
+static const uint32_t K_28_1 = 0x3C;
+static const uint32_t K_28_2 = 0x5C;
+static const uint32_t K_28_3 = 0x7C;
+static const uint32_t K_28_4 = 0x9C;
+static const uint32_t K_28_5 = 0xBC;
+static const uint32_t K_28_6 = 0xDC;
+static const uint32_t K_28_7 = 0xFC;
+static const uint32_t K_23_7 = 0xF7;
+static const uint32_t K_27_7 = 0xFB;
+static const uint32_t K_29_7 = 0xFD;
+static const uint32_t K_30_7 = 0xFE;
+
+static const value_string K_SYMBOLS[] = {
+    { K_28_5, "COM (Comma)" },
+    { K_27_7, "STP (Start TLP)" },
+    { K_28_2, "SDP (Start DLLP)" },
+    { K_29_7, "END (End)" },
+    { K_30_7, "EDB (EnD Bad)" },
+    { K_23_7, "PAD (Pad)" },
+    { K_28_0, "SKP (Skip)" },
+    { K_28_1, "FTS (Fast Training Sequence)" },
+    { K_28_3, "IDL (Idle)" },
+    { K_28_4, "K28.4 (Reserved)" },
+    { K_28_6, "K28.6 (Reserved)" },
+    { K_28_7, "EIE (Electrical Idle Exit)"},
+    { 0, NULL},
+};
+
 static dissector_handle_t PCIE_HANDLE = NULL;
 
 static int PROTO_PCIE = -1;
@@ -102,7 +132,7 @@ static hf_register_info HF_PCIE_DLLP[] = {
     { &HF_PCIE_DLLP_START_TAG,
         { "Start Tag", "pcie.dllp.start_tag",
         FT_UINT8, BASE_HEX,
-        NULL, 0x0,
+        VALS(K_SYMBOLS), 0x0,
         NULL, HFILL }
     },
     { &HF_PCIE_DLLP_RESERVED,
@@ -126,7 +156,7 @@ static hf_register_info HF_PCIE_DLLP[] = {
     { &HF_PCIE_DLLP_END_TAG,
         { "End Tag", "pcie.dllp.end_tag",
         FT_UINT8, BASE_HEX,
-        NULL, 0x0,
+        VALS(K_SYMBOLS), 0x0,
         NULL, HFILL }
     },
 };
