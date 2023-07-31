@@ -18,6 +18,8 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+
 #include <epan/packet.h>
 #include <epan/proto.h>
 
