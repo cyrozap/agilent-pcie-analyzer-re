@@ -57,7 +57,7 @@ static const value_string K_SYMBOLS[] = {
     { K_28_4, "K28.4 (Reserved)" },
     { K_28_6, "K28.6 (Reserved)" },
     { K_28_7, "EIE (Electrical Idle Exit)"},
-    { 0, NULL},
+    { 0, NULL },
 };
 
 static dissector_handle_t PCIE_HANDLE = NULL;
