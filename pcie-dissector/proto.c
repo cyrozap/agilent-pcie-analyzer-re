@@ -196,6 +196,7 @@ static int HF_PCIE_TLP_CPL_STATUS = -1;
 static int HF_PCIE_TLP_CPL_BCM = -1;
 static int HF_PCIE_TLP_CPL_BYTE_COUNT = -1;
 static int HF_PCIE_TLP_CPL_LOWER_ADDR = -1;
+static int HF_PCIE_TLP_PAYLOAD = -1;
 static int HF_PCIE_TLP_ECRC = -1;
 
 static hf_register_info HF_PCIE[] = {
@@ -481,6 +482,12 @@ static hf_register_info HF_PCIE_TLP[] = {
         NULL, 0x7F,
         NULL, HFILL }
     },
+    { &HF_PCIE_TLP_PAYLOAD,
+        { "Payload", "pcie.tlp.payload",
+        FT_BYTES, BASE_NONE,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
     { &HF_PCIE_TLP_ECRC,
         { "End-to-end CRC", "pcie.tlp.ecrc",
         FT_UINT32, BASE_HEX,
@@ -637,9 +644,17 @@ static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_t
             break;
     }
 
+    bool has_payload = tlp_fmt & 0b010;
+
+    int header_dw_count = 3 + (tlp_fmt & 0b001);
+
+    if (has_payload) {
+        proto_tree_add_item(tlp_tree, HF_PCIE_TLP_PAYLOAD, tvb, 4*header_dw_count, 4*payload_len, ENC_LITTLE_ENDIAN);
+    }
+
     if (tlp_digest) {
-        int ecrc_dw_offset = 3 + (tlp_fmt & 0b001);
-        if (tlp_fmt & 0b010) {
+        int ecrc_dw_offset = header_dw_count;
+        if (has_payload) {
             ecrc_dw_offset += payload_len;
         }
         proto_tree_add_item(tlp_tree, HF_PCIE_TLP_ECRC, tvb, 4*ecrc_dw_offset, 4, ENC_LITTLE_ENDIAN);
