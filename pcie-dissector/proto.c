@@ -141,6 +141,16 @@ static const value_string TLP_CPL_STATUS[] = {
     { 0, NULL },
 };
 
+static const value_string CFG_REGS[] = {
+    { 0x000, "DID/VID" },
+    { 0x001, "Status/Command" },
+    { 0x002, "Class/Revision" },
+    { 0x003, "BIST/Header Type/Latency Timer/Cache Line Size" },
+    { 0x00D, "Capabilities" },
+    { 0x00F, "Interrupt Line/Pin" },
+    { 0, NULL },
+};
+
 static dissector_handle_t PCIE_HANDLE = NULL;
 
 static int PROTO_PCIE = -1;
@@ -455,7 +465,7 @@ static hf_register_info HF_PCIE_TLP[] = {
     { &HF_PCIE_TLP_REG,
         { "Register Number", "pcie.tlp.reg",
         FT_UINT16, BASE_HEX,
-        NULL, 0x0FFC,
+        VALS(CFG_REGS), 0x0FFC,
         NULL, HFILL }
     },
     { &HF_PCIE_TLP_CPL_STATUS,
