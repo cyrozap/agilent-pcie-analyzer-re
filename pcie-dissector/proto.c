@@ -133,6 +133,14 @@ static const value_string TLP_TYPE[] = {
     { 0, NULL },
 };
 
+static const value_string TLP_CPL_STATUS[] = {
+    { 0b000, "Successful Completion (SC)" },
+    { 0b001, "Unsupported Request (UR)" },
+    { 0b010, "Configuration Request Retry Status (CRS)" },
+    { 0b100, "Completer Abort (CA)" },
+    { 0, NULL },
+};
+
 static dissector_handle_t PCIE_HANDLE = NULL;
 
 static int PROTO_PCIE = -1;
@@ -184,6 +192,10 @@ static int HF_PCIE_TLP_CPL_BUS = -1;
 static int HF_PCIE_TLP_CPL_DEV = -1;
 static int HF_PCIE_TLP_CPL_FUN = -1;
 static int HF_PCIE_TLP_REG = -1;
+static int HF_PCIE_TLP_CPL_STATUS = -1;
+static int HF_PCIE_TLP_CPL_BCM = -1;
+static int HF_PCIE_TLP_CPL_BYTE_COUNT = -1;
+static int HF_PCIE_TLP_CPL_LOWER_ADDR = -1;
 static int HF_PCIE_TLP_ECRC = -1;
 
 static hf_register_info HF_PCIE[] = {
@@ -445,6 +457,30 @@ static hf_register_info HF_PCIE_TLP[] = {
         NULL, 0x0FFC,
         NULL, HFILL }
     },
+    { &HF_PCIE_TLP_CPL_STATUS,
+        { "Completion Status", "pcie.tlp.cpl.status",
+        FT_UINT16, BASE_HEX,
+        VALS(TLP_CPL_STATUS), 0b111 << 13,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_CPL_BCM,
+        { "Byte Count Modified", "pcie.tlp.cpl.bcm",
+        FT_BOOLEAN, 16,
+        NULL, 0b1 << 12,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_CPL_BYTE_COUNT,
+        { "Byte Count", "pcie.tlp.cpl.byte_count",
+        FT_UINT16, BASE_DEC,
+        NULL, 0x0FFF,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_CPL_LOWER_ADDR,
+        { "Lower Address", "pcie.tlp.cpl.lower_addr",
+        FT_UINT8, BASE_HEX,
+        NULL, 0x7F,
+        NULL, HFILL }
+    },
     { &HF_PCIE_TLP_ECRC,
         { "End-to-end CRC", "pcie.tlp.ecrc",
         FT_UINT32, BASE_HEX,
@@ -475,6 +511,7 @@ static void dissect_pcie_frame_internal(tvbuff_t *tvb, packet_info *pinfo, proto
 static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, gboolean direction);
 static void dissect_tlp_mem_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, bool addr64);
 static void dissect_tlp_cfg_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data);
+static void dissect_tlp_cpl(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data);
 
 static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data) {
     proto_item * pcie_tree_item = proto_tree_add_item(tree, PROTO_PCIE, tvb, 0, PCIE_CAPTURE_HEADER_SIZE, ENC_NA);
@@ -593,6 +630,9 @@ static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_t
         case 0b00101:
             dissect_tlp_cfg_req(tvb, pinfo, tlp_tree, data);
             break;
+        case 0b01010:
+            dissect_tlp_cpl(tvb, pinfo, tlp_tree, data);
+            break;
         default:
             break;
     }
@@ -658,6 +698,39 @@ static void dissect_tlp_cfg_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *t
     col_add_fstr(pinfo->cinfo, COL_DEF_DST, "%02x:%02x.%x", cpl_bus, cpl_dev, cpl_fun);
 
     proto_tree_add_item(tree, HF_PCIE_TLP_REG, tvb, 10, 2, ENC_BIG_ENDIAN);
+}
+
+static void dissect_tlp_cpl(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data) {
+    proto_item * cpl_id_item = proto_tree_add_item(tree, HF_PCIE_TLP_CPL_ID, tvb, 4, 2, ENC_BIG_ENDIAN);
+    proto_tree * cpl_id_tree = proto_item_add_subtree(cpl_id_item, ETT_PCIE_TLP_CPL_ID);
+    uint32_t cpl_bus = 0;
+    proto_tree_add_item_ret_uint(cpl_id_tree, HF_PCIE_TLP_CPL_BUS, tvb, 4, 2, ENC_BIG_ENDIAN, &cpl_bus);
+    uint32_t cpl_dev = 0;
+    proto_tree_add_item_ret_uint(cpl_id_tree, HF_PCIE_TLP_CPL_DEV, tvb, 4, 2, ENC_BIG_ENDIAN, &cpl_dev);
+    uint32_t cpl_fun = 0;
+    proto_tree_add_item_ret_uint(cpl_id_tree, HF_PCIE_TLP_CPL_FUN, tvb, 4, 2, ENC_BIG_ENDIAN, &cpl_fun);
+
+    col_clear(pinfo->cinfo, COL_DEF_SRC);
+    col_add_fstr(pinfo->cinfo, COL_DEF_SRC, "%02x:%02x.%x", cpl_bus, cpl_dev, cpl_fun);
+
+    proto_tree_add_item(tree, HF_PCIE_TLP_CPL_STATUS, tvb, 6, 2, ENC_BIG_ENDIAN);
+    proto_tree_add_item(tree, HF_PCIE_TLP_CPL_BCM, tvb, 6, 2, ENC_BIG_ENDIAN);
+    proto_tree_add_item(tree, HF_PCIE_TLP_CPL_BYTE_COUNT, tvb, 6, 2, ENC_BIG_ENDIAN);
+
+    proto_item * req_id_item = proto_tree_add_item(tree, HF_PCIE_TLP_REQ_ID, tvb, 8, 2, ENC_BIG_ENDIAN);
+    proto_tree * req_id_tree = proto_item_add_subtree(req_id_item, ETT_PCIE_TLP_REQ_ID);
+    uint32_t req_bus = 0;
+    proto_tree_add_item_ret_uint(req_id_tree, HF_PCIE_TLP_REQ_BUS, tvb, 8, 2, ENC_BIG_ENDIAN, &req_bus);
+    uint32_t req_dev = 0;
+    proto_tree_add_item_ret_uint(req_id_tree, HF_PCIE_TLP_REQ_DEV, tvb, 8, 2, ENC_BIG_ENDIAN, &req_dev);
+    uint32_t req_fun = 0;
+    proto_tree_add_item_ret_uint(req_id_tree, HF_PCIE_TLP_REQ_FUN, tvb, 8, 2, ENC_BIG_ENDIAN, &req_fun);
+
+    col_clear(pinfo->cinfo, COL_DEF_DST);
+    col_add_fstr(pinfo->cinfo, COL_DEF_DST, "%02x:%02x.%x", req_bus, req_dev, req_fun);
+
+    proto_tree_add_item(tree, HF_PCIE_TLP_TAG, tvb, 10, 1, ENC_BIG_ENDIAN);
+    proto_tree_add_item(tree, HF_PCIE_TLP_CPL_LOWER_ADDR, tvb, 11, 1, ENC_BIG_ENDIAN);
 }
 
 static void proto_register_pcie_capture() {
