@@ -154,9 +154,35 @@ static int HF_PCIE_FRAME_TLP_SEQ = -1;
 static int HF_PCIE_FRAME_TLP_LCRC = -1;
 static int HF_PCIE_FRAME_END_TAG = -1;
 
+static int HF_PCIE_TLP_DW0 = -1;
 static int HF_PCIE_TLP_FMT_TYPE = -1;
 static int HF_PCIE_TLP_FMT = -1;
 static int HF_PCIE_TLP_TYPE = -1;
+static int HF_PCIE_TLP_T9 = -1;
+static int HF_PCIE_TLP_TC = -1;
+static int HF_PCIE_TLP_T8 = -1;
+static int HF_PCIE_TLP_ATTR2 = -1;
+static int HF_PCIE_TLP_LN = -1;
+static int HF_PCIE_TLP_TH = -1;
+static int HF_PCIE_TLP_TD = -1;
+static int HF_PCIE_TLP_EP = -1;
+static int HF_PCIE_TLP_ATTR10 = -1;
+static int HF_PCIE_TLP_AT = -1;
+static int HF_PCIE_TLP_LENGTH = -1;
+
+static int HF_PCIE_TLP_REQ_ID = -1;
+static int HF_PCIE_TLP_REQ_BUS = -1;
+static int HF_PCIE_TLP_REQ_DEV = -1;
+static int HF_PCIE_TLP_REQ_FUN = -1;
+static int HF_PCIE_TLP_TAG = -1;
+static int HF_PCIE_TLP_LAST_DW_BE = -1;
+static int HF_PCIE_TLP_FIRST_DW_BE = -1;
+static int HF_PCIE_TLP_CPL_ID = -1;
+static int HF_PCIE_TLP_CPL_BUS = -1;
+static int HF_PCIE_TLP_CPL_DEV = -1;
+static int HF_PCIE_TLP_CPL_FUN = -1;
+static int HF_PCIE_TLP_REG = -1;
+static int HF_PCIE_TLP_ECRC = -1;
 
 static hf_register_info HF_PCIE[] = {
     { &HF_PCIE_RECORD,
@@ -243,6 +269,12 @@ static hf_register_info HF_PCIE_FRAME[] = {
 };
 
 static hf_register_info HF_PCIE_TLP[] = {
+    { &HF_PCIE_TLP_DW0,
+        { "TLP DW 0", "pcie.tlp.dw0",
+        FT_UINT32, BASE_HEX,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
     { &HF_PCIE_TLP_FMT_TYPE,
         { "Fmt Type", "pcie.tlp.fmt_type",
         FT_UINT8, BASE_HEX,
@@ -261,22 +293,173 @@ static hf_register_info HF_PCIE_TLP[] = {
         VALS(TLP_TYPE), 0x1F,
         NULL, HFILL }
     },
+    { &HF_PCIE_TLP_T9,
+        { "Tag[9]", "pcie.tlp.t9",
+        FT_UINT24, BASE_DEC,
+        NULL, 0b1 << 23,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_TC,
+        { "Traffic Class", "pcie.tlp.tc",
+        FT_UINT24, BASE_HEX,
+        NULL, 0b111 << 20,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_T8,
+        { "Tag[8]", "pcie.tlp.t8",
+        FT_UINT24, BASE_DEC,
+        NULL, 0b1 << 19,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_ATTR2,
+        { "Attr[2]", "pcie.tlp.attr2",
+        FT_UINT24, BASE_DEC,
+        NULL, 0b1 << 18,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_LN,
+        { "Lightweight Notification", "pcie.tlp.ln",
+        FT_BOOLEAN, 24,
+        NULL, 0b1 << 17,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_TH,
+        { "TLP Hints", "pcie.tlp.th",
+        FT_BOOLEAN, 24,
+        NULL, 0b1 << 16,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_TD,
+        { "TLP Digest", "pcie.tlp.td",
+        FT_BOOLEAN, 24,
+        NULL, 0b1 << 15,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_EP,
+        { "Error Poisoned", "pcie.tlp.ep",
+        FT_BOOLEAN, 24,
+        NULL, 0b1 << 14,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_ATTR10,
+        { "Attr[1:0]", "pcie.tlp.attr10",
+        FT_UINT24, BASE_HEX,
+        NULL, 0b11 << 12,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_AT,
+        { "Address Type", "pcie.tlp.at",
+        FT_UINT24, BASE_HEX,
+        NULL, 0b11 << 10,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_LENGTH,
+        { "Payload Length", "pcie.tlp.len",
+        FT_UINT24, BASE_DEC,
+        NULL, 0x3FF,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_REQ_ID,
+        { "Requester ID", "pcie.tlp.req",
+        FT_UINT16, BASE_HEX,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_REQ_BUS,
+        { "Requester Bus", "pcie.tlp.req.bus",
+        FT_UINT16, BASE_HEX,
+        NULL, 0xFF00,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_REQ_DEV,
+        { "Requester Device", "pcie.tlp.req.dev",
+        FT_UINT16, BASE_HEX,
+        NULL, 0x00F8,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_REQ_FUN,
+        { "Requester Function", "pcie.tlp.req.fun",
+        FT_UINT16, BASE_DEC,
+        NULL, 0x0007,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_TAG,
+        { "Tag", "pcie.tlp.tag",
+        FT_UINT8, BASE_HEX,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_LAST_DW_BE,
+        { "Last DW BE", "pcie.tlp.last_dw_be",
+        FT_UINT8, BASE_HEX,
+        NULL, 0xF0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_FIRST_DW_BE,
+        { "First DW BE", "pcie.tlp.first_dw_be",
+        FT_UINT8, BASE_HEX,
+        NULL, 0x0F,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_CPL_ID,
+        { "Completer ID", "pcie.tlp.cpl",
+        FT_UINT16, BASE_HEX,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_CPL_BUS,
+        { "Completer Bus", "pcie.tlp.cpl.bus",
+        FT_UINT16, BASE_HEX,
+        NULL, 0xFF00,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_CPL_DEV,
+        { "Completer Device", "pcie.tlp.cpl.dev",
+        FT_UINT16, BASE_HEX,
+        NULL, 0x00F8,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_CPL_FUN,
+        { "Completer Function", "pcie.tlp.cpl.fun",
+        FT_UINT16, BASE_DEC,
+        NULL, 0x0007,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_REG,
+        { "Register Number", "pcie.tlp.reg",
+        FT_UINT16, BASE_HEX,
+        NULL, 0x0FFC,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_ECRC,
+        { "End-to-end CRC", "pcie.tlp.ecrc",
+        FT_UINT32, BASE_HEX,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
 };
 
 static int ETT_PCIE = -1;
 static int ETT_PCIE_FRAME = -1;
 static int ETT_PCIE_TLP = -1;
+static int ETT_PCIE_TLP_DW0 = -1;
 static int ETT_PCIE_TLP_FMT_TYPE = -1;
+static int ETT_PCIE_TLP_REQ_ID = -1;
+static int ETT_PCIE_TLP_CPL_ID = -1;
 static int * const ETT[] = {
         &ETT_PCIE,
         &ETT_PCIE_FRAME,
         &ETT_PCIE_TLP,
+        &ETT_PCIE_TLP_DW0,
         &ETT_PCIE_TLP_FMT_TYPE,
+        &ETT_PCIE_TLP_REQ_ID,
+        &ETT_PCIE_TLP_CPL_ID,
 };
 
 
 static void dissect_pcie_frame_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, gboolean direction);
 static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, gboolean direction);
+static void dissect_tlp_cfg_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data);
 
 static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data) {
     proto_item * pcie_tree_item = proto_tree_add_item(tree, PROTO_PCIE, tvb, 0, PCIE_CAPTURE_HEADER_SIZE, ENC_NA);
@@ -355,10 +538,86 @@ static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_t
     proto_item * tlp_tree_item = proto_tree_add_item(tree, PROTO_PCIE_TLP, tvb, 0, tlp_len, ENC_NA);
     proto_tree * tlp_tree = proto_item_add_subtree(tlp_tree_item, ETT_PCIE_TLP);
 
-    proto_item * fmt_type_item = proto_tree_add_item(tlp_tree, HF_PCIE_TLP_FMT_TYPE, tvb, 0, 1, ENC_BIG_ENDIAN);
+    proto_item * dw0_tree_item = proto_tree_add_item(tlp_tree, HF_PCIE_TLP_DW0, tvb, 0, 4, ENC_BIG_ENDIAN);
+    proto_tree * dw0_tree = proto_item_add_subtree(dw0_tree_item, ETT_PCIE_TLP_DW0);
+
+    proto_item * fmt_type_item = proto_tree_add_item(dw0_tree, HF_PCIE_TLP_FMT_TYPE, tvb, 0, 1, ENC_BIG_ENDIAN);
     proto_tree * fmt_type_tree = proto_item_add_subtree(fmt_type_item, ETT_PCIE_TLP_FMT_TYPE);
-    proto_tree_add_item(fmt_type_tree, HF_PCIE_TLP_FMT, tvb, 0, 1, ENC_BIG_ENDIAN);
-    proto_tree_add_item(fmt_type_tree, HF_PCIE_TLP_TYPE, tvb, 0, 1, ENC_BIG_ENDIAN);
+
+    uint32_t tlp_fmt = 0;
+    proto_tree_add_item_ret_uint(fmt_type_tree, HF_PCIE_TLP_FMT, tvb, 0, 1, ENC_BIG_ENDIAN, &tlp_fmt);
+
+    if (tlp_fmt >= 0b100) {
+        // TODO: Add support for TLP Prefixes.
+        return;
+    }
+
+    uint32_t tlp_type = 0;
+    proto_tree_add_item_ret_uint(fmt_type_tree, HF_PCIE_TLP_TYPE, tvb, 0, 1, ENC_BIG_ENDIAN, &tlp_type);
+
+    // Fields Present in All TLP Headers
+    proto_tree_add_item(dw0_tree, HF_PCIE_TLP_T9, tvb, 1, 3, ENC_BIG_ENDIAN);
+    proto_tree_add_item(dw0_tree, HF_PCIE_TLP_TC, tvb, 1, 3, ENC_BIG_ENDIAN);
+    proto_tree_add_item(dw0_tree, HF_PCIE_TLP_T8, tvb, 1, 3, ENC_BIG_ENDIAN);
+    proto_tree_add_item(dw0_tree, HF_PCIE_TLP_ATTR2, tvb, 1, 3, ENC_BIG_ENDIAN);
+    proto_tree_add_item(dw0_tree, HF_PCIE_TLP_LN, tvb, 1, 3, ENC_BIG_ENDIAN);
+    proto_tree_add_item(dw0_tree, HF_PCIE_TLP_TH, tvb, 1, 3, ENC_BIG_ENDIAN);
+    gboolean tlp_digest = 0;
+    proto_tree_add_item_ret_boolean(dw0_tree, HF_PCIE_TLP_TD, tvb, 1, 3, ENC_BIG_ENDIAN, &tlp_digest);
+    proto_tree_add_item(dw0_tree, HF_PCIE_TLP_EP, tvb, 1, 3, ENC_BIG_ENDIAN);
+    proto_tree_add_item(dw0_tree, HF_PCIE_TLP_ATTR10, tvb, 1, 3, ENC_BIG_ENDIAN);
+    proto_tree_add_item(dw0_tree, HF_PCIE_TLP_AT, tvb, 1, 3, ENC_BIG_ENDIAN);
+    uint32_t payload_len = 0;
+    proto_tree_add_item_ret_uint(dw0_tree, HF_PCIE_TLP_LENGTH, tvb, 1, 3, ENC_BIG_ENDIAN, &payload_len);
+
+    switch (tlp_type) {
+        case 0b00100:
+        case 0b00101:
+            dissect_tlp_cfg_req(tvb, pinfo, tlp_tree, data);
+            break;
+        default:
+            break;
+    }
+
+    if (tlp_digest) {
+        int ecrc_dw_offset = 3 + (tlp_fmt & 0b001);
+        if (tlp_fmt & 0b010) {
+            ecrc_dw_offset += payload_len;
+        }
+        proto_tree_add_item(tlp_tree, HF_PCIE_TLP_ECRC, tvb, 4*ecrc_dw_offset, 4, ENC_LITTLE_ENDIAN);
+    }
+}
+
+static void dissect_tlp_cfg_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data) {
+    proto_item * req_id_item = proto_tree_add_item(tree, HF_PCIE_TLP_REQ_ID, tvb, 4, 2, ENC_BIG_ENDIAN);
+    proto_tree * req_id_tree = proto_item_add_subtree(req_id_item, ETT_PCIE_TLP_REQ_ID);
+    uint32_t req_bus = 0;
+    proto_tree_add_item_ret_uint(req_id_tree, HF_PCIE_TLP_REQ_BUS, tvb, 4, 2, ENC_BIG_ENDIAN, &req_bus);
+    uint32_t req_dev = 0;
+    proto_tree_add_item_ret_uint(req_id_tree, HF_PCIE_TLP_REQ_DEV, tvb, 4, 2, ENC_BIG_ENDIAN, &req_dev);
+    uint32_t req_fun = 0;
+    proto_tree_add_item_ret_uint(req_id_tree, HF_PCIE_TLP_REQ_FUN, tvb, 4, 2, ENC_BIG_ENDIAN, &req_fun);
+
+    col_clear(pinfo->cinfo, COL_DEF_SRC);
+    col_add_fstr(pinfo->cinfo, COL_DEF_SRC, "%02x:%02x.%x", req_bus, req_dev, req_fun);
+
+    proto_tree_add_item(tree, HF_PCIE_TLP_TAG, tvb, 6, 1, ENC_BIG_ENDIAN);
+    proto_tree_add_item(tree, HF_PCIE_TLP_LAST_DW_BE, tvb, 7, 1, ENC_BIG_ENDIAN);
+    proto_tree_add_item(tree, HF_PCIE_TLP_FIRST_DW_BE, tvb, 7, 1, ENC_BIG_ENDIAN);
+
+    proto_item * cpl_id_item = proto_tree_add_item(tree, HF_PCIE_TLP_CPL_ID, tvb, 8, 2, ENC_BIG_ENDIAN);
+    proto_tree * cpl_id_tree = proto_item_add_subtree(cpl_id_item, ETT_PCIE_TLP_CPL_ID);
+    uint32_t cpl_bus = 0;
+    proto_tree_add_item_ret_uint(cpl_id_tree, HF_PCIE_TLP_CPL_BUS, tvb, 8, 2, ENC_BIG_ENDIAN, &cpl_bus);
+    uint32_t cpl_dev = 0;
+    proto_tree_add_item_ret_uint(cpl_id_tree, HF_PCIE_TLP_CPL_DEV, tvb, 8, 2, ENC_BIG_ENDIAN, &cpl_dev);
+    uint32_t cpl_fun = 0;
+    proto_tree_add_item_ret_uint(cpl_id_tree, HF_PCIE_TLP_CPL_FUN, tvb, 8, 2, ENC_BIG_ENDIAN, &cpl_fun);
+
+    col_clear(pinfo->cinfo, COL_DEF_DST);
+    col_add_fstr(pinfo->cinfo, COL_DEF_DST, "%02x:%02x.%x", cpl_bus, cpl_dev, cpl_fun);
+
+    proto_tree_add_item(tree, HF_PCIE_TLP_REG, tvb, 10, 2, ENC_BIG_ENDIAN);
 }
 
 static void proto_register_pcie_capture() {
