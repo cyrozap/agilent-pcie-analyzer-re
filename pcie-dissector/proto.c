@@ -174,6 +174,7 @@ static int * const ETT[] = {
 
 
 static void dissect_pcie_frame_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, gboolean direction);
+static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, gboolean direction);
 
 static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data) {
     proto_item * pcie_tree_item = proto_tree_add_item(tree, PROTO_PCIE, tvb, 0, PCIE_CAPTURE_HEADER_SIZE, ENC_NA);
@@ -223,16 +224,31 @@ static void dissect_pcie_frame_internal(tvbuff_t *tvb, packet_info *pinfo, proto
     uint32_t start_tag = 0;
     proto_tree_add_item_ret_uint(frame_tree, HF_PCIE_FRAME_START_TAG, tvb, 0, 1, ENC_BIG_ENDIAN, &start_tag);
 
-    if (start_tag != 0xfb) {
-        return;
+    switch (start_tag) {
+        case K_27_7:
+            col_set_str(pinfo->cinfo, COL_PROTOCOL, "PCIe TLP");
+            proto_tree_add_item(frame_tree, HF_PCIE_FRAME_TLP_RESERVED, tvb, 1, 2, ENC_BIG_ENDIAN);
+            proto_tree_add_item(frame_tree, HF_PCIE_FRAME_TLP_SEQ, tvb, 1, 2, ENC_BIG_ENDIAN);
+            proto_tree_add_item(frame_tree, HF_PCIE_FRAME_TLP_LCRC, tvb, frame_len-5, 4, ENC_BIG_ENDIAN);
+            proto_tree_add_item(frame_tree, HF_PCIE_FRAME_END_TAG, tvb, frame_len-1, 1, ENC_BIG_ENDIAN);
+
+            uint32_t tlp_len = frame_len-3-5;
+            tvbuff_t * tlp_tvb = tvb_new_subset_length_caplen(tvb, 3, tlp_len, tlp_len);
+            dissect_pcie_tlp_internal(tlp_tvb, pinfo, tree, data, direction);
+
+            break;
+        case K_28_2:
+            col_set_str(pinfo->cinfo, COL_PROTOCOL, "PCIe DLLP");
+            proto_tree_add_item(frame_tree, HF_PCIE_FRAME_END_TAG, tvb, frame_len-1, 1, ENC_BIG_ENDIAN);
+            break;
+        default:
+            break;
     }
+}
 
-    proto_tree_add_item(frame_tree, HF_PCIE_FRAME_TLP_RESERVED, tvb, 1, 2, ENC_BIG_ENDIAN);
-    proto_tree_add_item(frame_tree, HF_PCIE_FRAME_TLP_SEQ, tvb, 1, 2, ENC_BIG_ENDIAN);
-    proto_tree_add_item(frame_tree, HF_PCIE_FRAME_TLP_LCRC, tvb, frame_len-5, 4, ENC_BIG_ENDIAN);
-    proto_tree_add_item(frame_tree, HF_PCIE_FRAME_END_TAG, tvb, frame_len-1, 1, ENC_BIG_ENDIAN);
-
-    col_set_str(pinfo->cinfo, COL_PROTOCOL, "PCIe Frame");
+static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, gboolean direction) {
+    uint32_t tlp_len = tvb_reported_length(tvb);
+    proto_tree_add_item(tree, PROTO_PCIE_TLP, tvb, 0, tlp_len, ENC_NA);
 }
 
 static void proto_register_pcie_capture() {
