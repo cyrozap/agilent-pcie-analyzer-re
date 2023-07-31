@@ -60,6 +60,79 @@ static const value_string K_SYMBOLS[] = {
     { 0, NULL },
 };
 
+static const value_string TLP_FMT_TYPE[] = {
+    { 0b00000000, "Memory Read Request (3 DW header)" },
+    { 0b00100000, "Memory Read Request (4 DW header)" },
+    { 0b00000001, "Memory Read Request-Locked (3 DW header)" },
+    { 0b00100001, "Memory Read Request-Locked (4 DW header)" },
+    { 0b01000000, "Memory Write Request (3 DW header)" },
+    { 0b01100000, "Memory Write Request (4 DW header)" },
+    { 0b00000010, "I/O Read Request" },
+    { 0b01000010, "I/O Write Request" },
+    { 0b00000100, "Configuration Read Type 0" },
+    { 0b01000100, "Configuration Write Type 0" },
+    { 0b00000101, "Configuration Read Type 1" },
+    { 0b01000101, "Configuration Write Type 1" },
+    { 0b00110000, "Message Request (Routed to Root Complex)" },
+    { 0b00110001, "Message Request (Routed by Address)" },
+    { 0b00110010, "Message Request (Routed by ID)" },
+    { 0b00110011, "Message Request (Broadcast from Root Complex)" },
+    { 0b00110100, "Message Request (Local - Terminate at Receiver)" },
+    { 0b00110101, "Message Request (Gathered and routed to Root Complex)" },
+    { 0b00110110, "Message Request (Reserved - Terminate at Receiver)" },
+    { 0b00110111, "Message Request (Reserved - Terminate at Receiver)" },
+    { 0b01110000, "Message Request with data payload (Routed to Root Complex)" },
+    { 0b01110001, "Message Request with data payload (Routed by Address)" },
+    { 0b01110010, "Message Request with data payload (Routed by ID)" },
+    { 0b01110011, "Message Request with data payload (Broadcast from Root Complex)" },
+    { 0b01110100, "Message Request with data payload (Local - Terminate at Receiver)" },
+    { 0b01110101, "Message Request with data payload (Gathered and routed to Root Complex)" },
+    { 0b01110110, "Message Request with data payload (Reserved - Terminate at Receiver)" },
+    { 0b01110111, "Message Request with data payload (Reserved - Terminate at Receiver)" },
+    { 0b00001010, "Completion without Data" },
+    { 0b01001010, "Completion with Data" },
+    { 0b00001011, "Completion for Locked Memory Read without Data" },
+    { 0b01001011, "Completion for Locked Memory Read" },
+    { 0b01001100, "Fetch and Add AtomicOp Request (3 DW header)" },
+    { 0b01101100, "Fetch and Add AtomicOp Request (4 DW header)" },
+    { 0b01001101, "Unconditional Swap AtomicOp Request (3 DW header)" },
+    { 0b01101101, "Unconditional Swap AtomicOp Request (4 DW header)" },
+    { 0b01001110, "Compare and Swap AtomicOp Request (3 DW header)" },
+    { 0b01101110, "Compare and Swap AtomicOp Request (4 DW header)" },
+    { 0, NULL },
+};
+
+static const value_string TLP_FMT[] = {
+    { 0b000, "3 DW header, no data" },
+    { 0b001, "4 DW header, no data" },
+    { 0b010, "3 DW header, with data" },
+    { 0b011, "4 DW header, with data" },
+    { 0b100, "TLP Prefix" },
+    { 0, NULL },
+};
+
+static const value_string TLP_TYPE[] = {
+    { 0b00000, "Memory Request" },
+    { 0b00001, "Memory Request-Locked" },
+    { 0b00010, "I/O Request" },
+    { 0b00100, "Configuration Request Type 0" },
+    { 0b00101, "Configuration Request Type 1" },
+    { 0b10000, "Message Request (Routed to Root Complex)" },
+    { 0b10001, "Message Request (Routed by Address)" },
+    { 0b10010, "Message Request (Routed by ID)" },
+    { 0b10011, "Message Request (Broadcast from Root Complex)" },
+    { 0b10100, "Message Request (Local - Terminate at Receiver)" },
+    { 0b10101, "Message Request (Gathered and routed to Root Complex)" },
+    { 0b10110, "Message Request (Reserved - Terminate at Receiver)" },
+    { 0b10111, "Message Request (Reserved - Terminate at Receiver)" },
+    { 0b01010, "Completion" },
+    { 0b01011, "Completion for Locked Memory Read" },
+    { 0b01100, "Fetch and Add AtomicOp Request" },
+    { 0b01101, "Unconditional Swap AtomicOp Request" },
+    { 0b01110, "Compare and Swap AtomicOp Request" },
+    { 0, NULL },
+};
+
 static dissector_handle_t PCIE_HANDLE = NULL;
 
 static int PROTO_PCIE = -1;
@@ -80,6 +153,10 @@ static int HF_PCIE_FRAME_TLP_RESERVED = -1;
 static int HF_PCIE_FRAME_TLP_SEQ = -1;
 static int HF_PCIE_FRAME_TLP_LCRC = -1;
 static int HF_PCIE_FRAME_END_TAG = -1;
+
+static int HF_PCIE_TLP_FMT_TYPE = -1;
+static int HF_PCIE_TLP_FMT = -1;
+static int HF_PCIE_TLP_TYPE = -1;
 
 static hf_register_info HF_PCIE[] = {
     { &HF_PCIE_RECORD,
@@ -165,11 +242,36 @@ static hf_register_info HF_PCIE_FRAME[] = {
     },
 };
 
+static hf_register_info HF_PCIE_TLP[] = {
+    { &HF_PCIE_TLP_FMT_TYPE,
+        { "Fmt Type", "pcie.tlp.fmt_type",
+        FT_UINT8, BASE_HEX,
+        VALS(TLP_FMT_TYPE), 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_FMT,
+        { "Fmt", "pcie.tlp.fmt",
+        FT_UINT8, BASE_HEX,
+        VALS(TLP_FMT), 0xE0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_TYPE,
+        { "Type", "pcie.tlp.type",
+        FT_UINT8, BASE_HEX,
+        VALS(TLP_TYPE), 0x1F,
+        NULL, HFILL }
+    },
+};
+
 static int ETT_PCIE = -1;
 static int ETT_PCIE_FRAME = -1;
+static int ETT_PCIE_TLP = -1;
+static int ETT_PCIE_TLP_FMT_TYPE = -1;
 static int * const ETT[] = {
         &ETT_PCIE,
         &ETT_PCIE_FRAME,
+        &ETT_PCIE_TLP,
+        &ETT_PCIE_TLP_FMT_TYPE,
 };
 
 
@@ -248,7 +350,13 @@ static void dissect_pcie_frame_internal(tvbuff_t *tvb, packet_info *pinfo, proto
 
 static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, gboolean direction) {
     uint32_t tlp_len = tvb_reported_length(tvb);
-    proto_tree_add_item(tree, PROTO_PCIE_TLP, tvb, 0, tlp_len, ENC_NA);
+    proto_item * tlp_tree_item = proto_tree_add_item(tree, PROTO_PCIE_TLP, tvb, 0, tlp_len, ENC_NA);
+    proto_tree * tlp_tree = proto_item_add_subtree(tlp_tree_item, ETT_PCIE_TLP);
+
+    proto_item * fmt_type_item = proto_tree_add_item(tlp_tree, HF_PCIE_TLP_FMT_TYPE, tvb, 0, 1, ENC_BIG_ENDIAN);
+    proto_tree * fmt_type_tree = proto_item_add_subtree(fmt_type_item, ETT_PCIE_TLP_FMT_TYPE);
+    proto_tree_add_item(fmt_type_tree, HF_PCIE_TLP_FMT, tvb, 0, 1, ENC_BIG_ENDIAN);
+    proto_tree_add_item(fmt_type_tree, HF_PCIE_TLP_TYPE, tvb, 0, 1, ENC_BIG_ENDIAN);
 }
 
 static void proto_register_pcie_capture() {
@@ -279,6 +387,8 @@ static void proto_register_pcie_tlp() {
         "PCIe TLP",
         "pcie.tlp"
     );
+
+    proto_register_field_array(PROTO_PCIE_TLP, HF_PCIE_TLP, array_length(HF_PCIE_TLP));
 }
 
 void proto_register_pcie() {
