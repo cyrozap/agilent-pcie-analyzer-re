@@ -563,7 +563,7 @@ static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
         return tvb_captured_length(tvb);
     }
 
-    tvbuff_t * frame_tvb = tvb_new_subset_length_caplen(tvb, PCIE_CAPTURE_HEADER_SIZE, data_valid_count, data_valid_count);
+    tvbuff_t * frame_tvb = tvb_new_subset_length(tvb, PCIE_CAPTURE_HEADER_SIZE, data_valid_count);
     dissect_pcie_frame_internal(frame_tvb, pinfo, tree, data, direction);
 
     return tvb_captured_length(tvb);
@@ -589,7 +589,7 @@ static void dissect_pcie_frame_internal(tvbuff_t *tvb, packet_info *pinfo, proto
             proto_tree_add_item(frame_tree, HF_PCIE_FRAME_END_TAG, tvb, frame_len-1, 1, ENC_BIG_ENDIAN);
 
             uint32_t tlp_len = frame_len-3-5;
-            tvbuff_t * tlp_tvb = tvb_new_subset_length_caplen(tvb, 3, tlp_len, tlp_len);
+            tvbuff_t * tlp_tvb = tvb_new_subset_length(tvb, 3, tlp_len);
             dissect_pcie_tlp_internal(tlp_tvb, pinfo, tree, data, direction);
 
             break;
