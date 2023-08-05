@@ -770,7 +770,7 @@ static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_t
             tlp_tag_info_t * tag_info = (tlp_tag_info_t *)wmem_map_lookup(tlp_info->tags, GUINT_TO_POINTER(req_id));
             if (tag_info) {
                 tlp_transaction_id |= tag_info->tlp_tag_epoch << 32;
-                tlp_trans = (tlp_transaction_t *)wmem_map_lookup(tlp_info->pdus, GUINT_TO_POINTER(tlp_transaction_id));
+                tlp_trans = (tlp_transaction_t *)wmem_map_remove(tlp_info->pdus, GUINT_TO_POINTER(tlp_transaction_id));
                 if (tlp_trans) {
                     tlp_trans->cpl_frame = pinfo->num;
                     wmem_map_insert(tlp_info->pdus_by_record_num, GUINT_TO_POINTER(pinfo->num), (void *)tlp_trans);
