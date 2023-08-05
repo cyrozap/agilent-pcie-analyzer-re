@@ -211,6 +211,7 @@ static int HF_PCIE_TLP_REQ_ID = -1;
 static int HF_PCIE_TLP_REQ_BUS = -1;
 static int HF_PCIE_TLP_REQ_DEV = -1;
 static int HF_PCIE_TLP_REQ_FUN = -1;
+static int HF_PCIE_TLP_TAG_7_0 = -1;
 static int HF_PCIE_TLP_TAG = -1;
 static int HF_PCIE_TLP_LAST_DW_BE = -1;
 static int HF_PCIE_TLP_FIRST_DW_BE = -1;
@@ -430,9 +431,15 @@ static hf_register_info HF_PCIE_TLP[] = {
         NULL, 0x0007,
         NULL, HFILL }
     },
-    { &HF_PCIE_TLP_TAG,
-        { "Tag", "pcie.tlp.tag",
+    { &HF_PCIE_TLP_TAG_7_0,
+        { "Tag[7:0]", "pcie.tlp.tag70",
         FT_UINT8, BASE_HEX,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_TAG,
+        { "Tag[9:0]", "pcie.tlp.tag",
+        FT_UINT16, BASE_HEX,
         NULL, 0x0,
         NULL, HFILL }
     },
@@ -790,6 +797,8 @@ static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_t
         proto_tree_add_item(tlp_tree, HF_PCIE_TLP_ECRC, tvb, 4*ecrc_dw_offset, 4, ENC_LITTLE_ENDIAN);
     }
 
+    proto_item_set_generated(proto_tree_add_uint_format_value(tlp_tree, HF_PCIE_TLP_TAG, tvb, 0, 0, tlp_tag, "0x%03x", tlp_tag));
+
     if (tlp_trans) {
         if ((!is_completion(tlp_fmt_type)) && (!is_posted_request(tlp_fmt_type))) {
             /* This is a request */
@@ -828,7 +837,7 @@ static void dissect_tlp_req_header(tvbuff_t *tvb, packet_info *pinfo, proto_tree
     col_clear(pinfo->cinfo, COL_DEF_SRC);
     col_add_fstr(pinfo->cinfo, COL_DEF_SRC, "%02x:%02x.%x", req_bus, req_dev, req_fun);
 
-    proto_tree_add_item_ret_uint(tree, HF_PCIE_TLP_TAG, tvb, 6, 1, ENC_BIG_ENDIAN, tag70);
+    proto_tree_add_item_ret_uint(tree, HF_PCIE_TLP_TAG_7_0, tvb, 6, 1, ENC_BIG_ENDIAN, tag70);
     proto_tree_add_item(tree, HF_PCIE_TLP_LAST_DW_BE, tvb, 7, 1, ENC_BIG_ENDIAN);
     proto_tree_add_item(tree, HF_PCIE_TLP_FIRST_DW_BE, tvb, 7, 1, ENC_BIG_ENDIAN);
 }
@@ -898,7 +907,7 @@ static void dissect_tlp_cpl(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree,
     col_clear(pinfo->cinfo, COL_DEF_DST);
     col_add_fstr(pinfo->cinfo, COL_DEF_DST, "%02x:%02x.%x", req_bus, req_dev, req_fun);
 
-    proto_tree_add_item_ret_uint(tree, HF_PCIE_TLP_TAG, tvb, 10, 1, ENC_BIG_ENDIAN, tag70);
+    proto_tree_add_item_ret_uint(tree, HF_PCIE_TLP_TAG_7_0, tvb, 10, 1, ENC_BIG_ENDIAN, tag70);
     proto_tree_add_item(tree, HF_PCIE_TLP_CPL_LOWER_ADDR, tvb, 11, 1, ENC_BIG_ENDIAN);
 }
 
