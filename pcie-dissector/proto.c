@@ -79,6 +79,116 @@ static const value_string K_SYMBOLS[] = {
     { 0, NULL },
 };
 
+static const value_string DLLP_TYPE[] = {
+    { 0b00000000, "Ack" },
+    { 0b00000001, "MRInit" },
+    { 0b00000010, "Data_Link_Feature" },
+    { 0b00010000, "Nak" },
+    { 0b00100000, "PM_Enter_L1" },
+    { 0b00100001, "PM_Enter_L23" },
+    { 0b00100011, "PM_Active_State_Request_L1" },
+    { 0b00100100, "PM_Request_Ack" },
+    { 0b00110000, "Vendor-specific" },
+    { 0b00110001, "NOP" },
+    { 0b01000000, "InitFC1-P (VC0)" },
+    { 0b01000001, "InitFC1-P (VC1)" },
+    { 0b01000010, "InitFC1-P (VC2)" },
+    { 0b01000011, "InitFC1-P (VC3)" },
+    { 0b01000100, "InitFC1-P (VC4)" },
+    { 0b01000101, "InitFC1-P (VC5)" },
+    { 0b01000110, "InitFC1-P (VC6)" },
+    { 0b01000111, "InitFC1-P (VC7)" },
+    { 0b01010000, "InitFC1-NP (VC0)" },
+    { 0b01010001, "InitFC1-NP (VC1)" },
+    { 0b01010010, "InitFC1-NP (VC2)" },
+    { 0b01010011, "InitFC1-NP (VC3)" },
+    { 0b01010100, "InitFC1-NP (VC4)" },
+    { 0b01010101, "InitFC1-NP (VC5)" },
+    { 0b01010110, "InitFC1-NP (VC6)" },
+    { 0b01010111, "InitFC1-NP (VC7)" },
+    { 0b01100000, "InitFC1-Cpl (VC0)" },
+    { 0b01100001, "InitFC1-Cpl (VC1)" },
+    { 0b01100010, "InitFC1-Cpl (VC2)" },
+    { 0b01100011, "InitFC1-Cpl (VC3)" },
+    { 0b01100100, "InitFC1-Cpl (VC4)" },
+    { 0b01100101, "InitFC1-Cpl (VC5)" },
+    { 0b01100110, "InitFC1-Cpl (VC6)" },
+    { 0b01100111, "InitFC1-Cpl (VC7)" },
+    { 0b01110000, "MRInitFC1 (VL0)" },
+    { 0b01110001, "MRInitFC1 (VL1)" },
+    { 0b01110010, "MRInitFC1 (VL2)" },
+    { 0b01110011, "MRInitFC1 (VL3)" },
+    { 0b01110100, "MRInitFC1 (VL4)" },
+    { 0b01110101, "MRInitFC1 (VL5)" },
+    { 0b01110110, "MRInitFC1 (VL6)" },
+    { 0b01110111, "MRInitFC1 (VL7)" },
+    { 0b11000000, "InitFC2-P (VC0)" },
+    { 0b11000001, "InitFC2-P (VC1)" },
+    { 0b11000010, "InitFC2-P (VC2)" },
+    { 0b11000011, "InitFC2-P (VC3)" },
+    { 0b11000100, "InitFC2-P (VC4)" },
+    { 0b11000101, "InitFC2-P (VC5)" },
+    { 0b11000110, "InitFC2-P (VC6)" },
+    { 0b11000111, "InitFC2-P (VC7)" },
+    { 0b11010000, "InitFC2-NP (VC0)" },
+    { 0b11010001, "InitFC2-NP (VC1)" },
+    { 0b11010010, "InitFC2-NP (VC2)" },
+    { 0b11010011, "InitFC2-NP (VC3)" },
+    { 0b11010100, "InitFC2-NP (VC4)" },
+    { 0b11010101, "InitFC2-NP (VC5)" },
+    { 0b11010110, "InitFC2-NP (VC6)" },
+    { 0b11010111, "InitFC2-NP (VC7)" },
+    { 0b11100000, "InitFC2-Cpl (VC0)" },
+    { 0b11100001, "InitFC2-Cpl (VC1)" },
+    { 0b11100010, "InitFC2-Cpl (VC2)" },
+    { 0b11100011, "InitFC2-Cpl (VC3)" },
+    { 0b11100100, "InitFC2-Cpl (VC4)" },
+    { 0b11100101, "InitFC2-Cpl (VC5)" },
+    { 0b11100110, "InitFC2-Cpl (VC6)" },
+    { 0b11100111, "InitFC2-Cpl (VC7)" },
+    { 0b11110000, "MRInitFC2 (VL0)" },
+    { 0b11110001, "MRInitFC2 (VL1)" },
+    { 0b11110010, "MRInitFC2 (VL2)" },
+    { 0b11110011, "MRInitFC2 (VL3)" },
+    { 0b11110100, "MRInitFC2 (VL4)" },
+    { 0b11110101, "MRInitFC2 (VL5)" },
+    { 0b11110110, "MRInitFC2 (VL6)" },
+    { 0b11110111, "MRInitFC2 (VL7)" },
+    { 0b10000000, "UpdateFC-P (VC0)" },
+    { 0b10000001, "UpdateFC-P (VC1)" },
+    { 0b10000010, "UpdateFC-P (VC2)" },
+    { 0b10000011, "UpdateFC-P (VC3)" },
+    { 0b10000100, "UpdateFC-P (VC4)" },
+    { 0b10000101, "UpdateFC-P (VC5)" },
+    { 0b10000110, "UpdateFC-P (VC6)" },
+    { 0b10000111, "UpdateFC-P (VC7)" },
+    { 0b10010000, "UpdateFC-NP (VC0)" },
+    { 0b10010001, "UpdateFC-NP (VC1)" },
+    { 0b10010010, "UpdateFC-NP (VC2)" },
+    { 0b10010011, "UpdateFC-NP (VC3)" },
+    { 0b10010100, "UpdateFC-NP (VC4)" },
+    { 0b10010101, "UpdateFC-NP (VC5)" },
+    { 0b10010110, "UpdateFC-NP (VC6)" },
+    { 0b10010111, "UpdateFC-NP (VC7)" },
+    { 0b10100000, "UpdateFC-Cpl (VC0)" },
+    { 0b10100001, "UpdateFC-Cpl (VC1)" },
+    { 0b10100010, "UpdateFC-Cpl (VC2)" },
+    { 0b10100011, "UpdateFC-Cpl (VC3)" },
+    { 0b10100100, "UpdateFC-Cpl (VC4)" },
+    { 0b10100101, "UpdateFC-Cpl (VC5)" },
+    { 0b10100110, "UpdateFC-Cpl (VC6)" },
+    { 0b10100111, "UpdateFC-Cpl (VC7)" },
+    { 0b10110000, "MRUpdateFC (VL0)" },
+    { 0b10110001, "MRUpdateFC (VL1)" },
+    { 0b10110010, "MRUpdateFC (VL2)" },
+    { 0b10110011, "MRUpdateFC (VL3)" },
+    { 0b10110100, "MRUpdateFC (VL4)" },
+    { 0b10110101, "MRUpdateFC (VL5)" },
+    { 0b10110110, "MRUpdateFC (VL6)" },
+    { 0b10110111, "MRUpdateFC (VL7)" },
+    { 0, NULL },
+};
+
 static const value_string TLP_FMT_TYPE[] = {
     { 0b00000000, "Memory Read Request (3 DW header)" },
     { 0b00100000, "Memory Read Request (4 DW header)" },
@@ -224,6 +334,7 @@ static dissector_handle_t PCIE_HANDLE = NULL;
 
 static int PROTO_PCIE = -1;
 static int PROTO_PCIE_FRAME = -1;
+static int PROTO_PCIE_DLLP = -1;
 static int PROTO_PCIE_TLP = -1;
 
 static int HF_PCIE_RECORD = -1;
@@ -240,6 +351,9 @@ static int HF_PCIE_FRAME_TLP_RESERVED = -1;
 static int HF_PCIE_FRAME_TLP_SEQ = -1;
 static int HF_PCIE_FRAME_TLP_LCRC = -1;
 static int HF_PCIE_FRAME_END_TAG = -1;
+
+static int HF_PCIE_DLLP_TYPE = -1;
+static int HF_PCIE_DLLP_CRC = -1;
 
 static int HF_PCIE_TLP_DW0 = -1;
 static int HF_PCIE_TLP_FMT_TYPE = -1;
@@ -362,6 +476,21 @@ static hf_register_info HF_PCIE_FRAME[] = {
         { "End Tag", "pcie.frame.end_tag",
         FT_UINT8, BASE_HEX,
         VALS(K_SYMBOLS), 0x0,
+        NULL, HFILL }
+    },
+};
+
+static hf_register_info HF_PCIE_DLLP[] = {
+    { &HF_PCIE_DLLP_TYPE,
+        { "Type", "pcie.dllp.type",
+        FT_UINT8, BASE_HEX,
+        VALS(DLLP_TYPE), 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_DLLP_CRC,
+        { "CRC", "pcie.dllp.crc",
+        FT_UINT16, BASE_HEX,
+        NULL, 0x0,
         NULL, HFILL }
     },
 };
@@ -605,6 +734,7 @@ static hf_register_info HF_PCIE_TLP[] = {
 
 static int ETT_PCIE = -1;
 static int ETT_PCIE_FRAME = -1;
+static int ETT_PCIE_DLLP = -1;
 static int ETT_PCIE_TLP = -1;
 static int ETT_PCIE_TLP_DW0 = -1;
 static int ETT_PCIE_TLP_FMT_TYPE = -1;
@@ -613,6 +743,7 @@ static int ETT_PCIE_TLP_CPL_ID = -1;
 static int * const ETT[] = {
         &ETT_PCIE,
         &ETT_PCIE_FRAME,
+        &ETT_PCIE_DLLP,
         &ETT_PCIE_TLP,
         &ETT_PCIE_TLP_DW0,
         &ETT_PCIE_TLP_FMT_TYPE,
@@ -622,6 +753,7 @@ static int * const ETT[] = {
 
 
 static void dissect_pcie_frame_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, gboolean direction);
+static void dissect_pcie_dllp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data);
 static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data);
 static void dissect_tlp_mem_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70, bool addr64);
 static void dissect_tlp_cfg_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70);
@@ -708,11 +840,21 @@ static void dissect_pcie_frame_internal(tvbuff_t *tvb, packet_info *pinfo, proto
             break;
         case K_28_2:
             col_set_str(pinfo->cinfo, COL_PROTOCOL, "PCIe DLLP");
-            proto_tree_add_item(frame_tree, HF_PCIE_FRAME_END_TAG, tvb, frame_len-1, 1, ENC_BIG_ENDIAN);
+            tvbuff_t * dllp_tvb = tvb_new_subset_length(tvb, 1, 6);
+            dissect_pcie_dllp_internal(dllp_tvb, pinfo, tree, data);
+            proto_tree_add_item(frame_tree, HF_PCIE_FRAME_END_TAG, tvb, 7, 1, ENC_BIG_ENDIAN);
             break;
         default:
             break;
     }
+}
+
+static void dissect_pcie_dllp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data) {
+    uint32_t dllp_len = tvb_reported_length(tvb);
+    proto_item * dllp_tree_item = proto_tree_add_item(tree, PROTO_PCIE_DLLP, tvb, 0, dllp_len, ENC_NA);
+    proto_tree * dllp_tree = proto_item_add_subtree(dllp_tree_item, ETT_PCIE_DLLP);
+    proto_tree_add_item(dllp_tree, HF_PCIE_DLLP_TYPE, tvb, 0, 1, ENC_BIG_ENDIAN);
+    proto_tree_add_item(dllp_tree, HF_PCIE_DLLP_CRC, tvb, 4, 2, ENC_LITTLE_ENDIAN);
 }
 
 static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data) {
@@ -1005,6 +1147,16 @@ static void proto_register_pcie_frame() {
     proto_register_field_array(PROTO_PCIE_FRAME, HF_PCIE_FRAME, array_length(HF_PCIE_FRAME));
 }
 
+static void proto_register_pcie_dllp() {
+    PROTO_PCIE_DLLP = proto_register_protocol(
+        "PCI Express Data Link Layer Packet",
+        "PCIe DLLP",
+        "pcie.dllp"
+    );
+
+    proto_register_field_array(PROTO_PCIE_DLLP, HF_PCIE_DLLP, array_length(HF_PCIE_DLLP));
+}
+
 static void proto_register_pcie_tlp() {
     PROTO_PCIE_TLP = proto_register_protocol(
         "PCI Express Transaction Layer Packet",
@@ -1023,6 +1175,9 @@ void proto_register_pcie() {
 
     // PCIe Frame
     proto_register_pcie_frame();
+
+    // PCIe DLLP
+    proto_register_pcie_dllp();
 
     // PCIe TLP
     proto_register_pcie_tlp();
