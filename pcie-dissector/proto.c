@@ -121,6 +121,48 @@ static const value_string TLP_FMT_TYPE[] = {
     { 0, NULL },
 };
 
+static const value_string TLP_FMT_TYPE_SHORT[] = {
+    { 0b00000000, "MRd" },
+    { 0b00100000, "MRd" },
+    { 0b00000001, "MRdLk" },
+    { 0b00100001, "MRdLk" },
+    { 0b01000000, "MWr" },
+    { 0b01100000, "MWr" },
+    { 0b00000010, "IORd" },
+    { 0b01000010, "IOWr" },
+    { 0b00000100, "CfgRd0" },
+    { 0b01000100, "CfgWr0" },
+    { 0b00000101, "CfgRd1" },
+    { 0b01000101, "CfgWr1" },
+    { 0b00110000, "Msg (Routed to Root Complex)" },
+    { 0b00110001, "Msg (Routed by Address)" },
+    { 0b00110010, "Msg (Routed by ID)" },
+    { 0b00110011, "Msg (Broadcast from Root Complex)" },
+    { 0b00110100, "Msg (Local - Terminate at Receiver)" },
+    { 0b00110101, "Msg (Gathered and routed to Root Complex)" },
+    { 0b00110110, "Msg (Reserved - Terminate at Receiver)" },
+    { 0b00110111, "Msg (Reserved - Terminate at Receiver)" },
+    { 0b01110000, "MsgD (Routed to Root Complex)" },
+    { 0b01110001, "MsgD (Routed by Address)" },
+    { 0b01110010, "MsgD (Routed by ID)" },
+    { 0b01110011, "MsgD (Broadcast from Root Complex)" },
+    { 0b01110100, "MsgD (Local - Terminate at Receiver)" },
+    { 0b01110101, "MsgD (Gathered and routed to Root Complex)" },
+    { 0b01110110, "MsgD (Reserved - Terminate at Receiver)" },
+    { 0b01110111, "MsgD (Reserved - Terminate at Receiver)" },
+    { 0b00001010, "Cpl" },
+    { 0b01001010, "CplD" },
+    { 0b00001011, "CplLk" },
+    { 0b01001011, "CplDLk" },
+    { 0b01001100, "FetchAdd" },
+    { 0b01101100, "FetchAdd" },
+    { 0b01001101, "Swap-32" },
+    { 0b01101101, "Swap-64" },
+    { 0b01001110, "CAS-32" },
+    { 0b01101110, "CAS-64" },
+    { 0, NULL },
+};
+
 static const value_string TLP_FMT[] = {
     { 0b000, "3 DW header, no data" },
     { 0b001, "4 DW header, no data" },
@@ -157,6 +199,14 @@ static const value_string TLP_CPL_STATUS[] = {
     { 0b001, "Unsupported Request (UR)" },
     { 0b010, "Configuration Request Retry Status (CRS)" },
     { 0b100, "Completer Abort (CA)" },
+    { 0, NULL },
+};
+
+static const value_string TLP_CPL_STATUS_SHORT[] = {
+    { 0b000, "SC" },
+    { 0b001, "UR" },
+    { 0b010, "CRS" },
+    { 0b100, "CA" },
     { 0, NULL },
 };
 
@@ -705,11 +755,17 @@ static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_t
     uint32_t payload_len = 0;
     proto_tree_add_item_ret_uint(dw0_tree, HF_PCIE_TLP_LENGTH, tvb, 1, 3, ENC_BIG_ENDIAN, &payload_len);
 
+    bool has_payload = tlp_fmt & 0b010;
+
     uint32_t req_id = 0;
     uint32_t tag70 = 0;
 
+    col_clear(pinfo->cinfo, COL_INFO);
+    col_add_str(pinfo->cinfo, COL_INFO, try_val_to_str(tlp_fmt_type, TLP_FMT_TYPE_SHORT));
+
     switch (tlp_type) {
         case 0b00000:
+            col_append_fstr(pinfo->cinfo, COL_INFO, ", %d dw", payload_len);
             dissect_tlp_mem_req(tvb, pinfo, tlp_tree, data, &req_id, &tag70, (tlp_fmt & 0b001) != 0);
             break;
         case 0b00100:
@@ -718,6 +774,9 @@ static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_t
             break;
         case 0b01010:
             dissect_tlp_cpl(tvb, pinfo, tlp_tree, data, &req_id, &tag70);
+            if (has_payload) {
+                col_append_fstr(pinfo->cinfo, COL_INFO, ", %d dw", payload_len);
+            }
             break;
         default:
             break;
@@ -781,12 +840,14 @@ static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_t
         tlp_trans = (tlp_transaction_t *)wmem_map_lookup(tlp_info->pdus_by_record_num, GUINT_TO_POINTER(pinfo->num));
     }
 
-    bool has_payload = tlp_fmt & 0b010;
-
     int header_dw_count = 3 + (tlp_fmt & 0b001);
 
     if (has_payload) {
         proto_tree_add_item(tlp_tree, HF_PCIE_TLP_PAYLOAD, tvb, 4*header_dw_count, 4*payload_len, ENC_LITTLE_ENDIAN);
+
+        if (payload_len == 1) {
+            col_append_fstr(pinfo->cinfo, COL_INFO, ": 0x%08x", tvb_get_letohl(tvb, 4*header_dw_count));
+        }
     }
 
     if (tlp_digest) {
@@ -849,11 +910,15 @@ static void dissect_tlp_mem_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *t
         uint64_t addr = 0;
         proto_tree_add_item_ret_uint64(tree, HF_PCIE_TLP_ADDR_64, tvb, 8, 8, ENC_BIG_ENDIAN, &addr);
 
+        col_append_fstr(pinfo->cinfo, COL_INFO, " @ 0x%016lx", addr);
+
         col_clear(pinfo->cinfo, COL_DEF_DST);
         col_add_fstr(pinfo->cinfo, COL_DEF_DST, "0x%016lx", addr);
     } else {
         uint32_t addr = 0;
         proto_tree_add_item_ret_uint(tree, HF_PCIE_TLP_ADDR_32, tvb, 8, 4, ENC_BIG_ENDIAN, &addr);
+
+        col_append_fstr(pinfo->cinfo, COL_INFO, " @ 0x%08x", addr);
 
         col_clear(pinfo->cinfo, COL_DEF_DST);
         col_add_fstr(pinfo->cinfo, COL_DEF_DST, "0x%08x", addr);
@@ -875,7 +940,10 @@ static void dissect_tlp_cfg_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *t
     col_clear(pinfo->cinfo, COL_DEF_DST);
     col_add_fstr(pinfo->cinfo, COL_DEF_DST, "%02x:%02x.%x", cpl_bus, cpl_dev, cpl_fun);
 
-    proto_tree_add_item(tree, HF_PCIE_TLP_REG, tvb, 10, 2, ENC_BIG_ENDIAN);
+    uint32_t reg_num = 0;
+    proto_tree_add_item_ret_uint(tree, HF_PCIE_TLP_REG, tvb, 10, 2, ENC_BIG_ENDIAN, &reg_num);
+
+    col_append_fstr(pinfo->cinfo, COL_INFO, " @ 0x%03x", 4*reg_num);
 }
 
 static void dissect_tlp_cpl(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70) {
@@ -891,7 +959,11 @@ static void dissect_tlp_cpl(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree,
     col_clear(pinfo->cinfo, COL_DEF_SRC);
     col_add_fstr(pinfo->cinfo, COL_DEF_SRC, "%02x:%02x.%x", cpl_bus, cpl_dev, cpl_fun);
 
-    proto_tree_add_item(tree, HF_PCIE_TLP_CPL_STATUS, tvb, 6, 2, ENC_BIG_ENDIAN);
+    uint32_t status = 0;
+    proto_tree_add_item_ret_uint(tree, HF_PCIE_TLP_CPL_STATUS, tvb, 6, 2, ENC_BIG_ENDIAN, &status);
+
+    col_append_fstr(pinfo->cinfo, COL_INFO, ", %s", try_val_to_str(status, TLP_CPL_STATUS_SHORT));
+
     proto_tree_add_item(tree, HF_PCIE_TLP_CPL_BCM, tvb, 6, 2, ENC_BIG_ENDIAN);
     proto_tree_add_item(tree, HF_PCIE_TLP_CPL_BYTE_COUNT, tvb, 6, 2, ENC_BIG_ENDIAN);
 
