@@ -622,7 +622,7 @@ static int * const ETT[] = {
 
 
 static void dissect_pcie_frame_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, gboolean direction);
-static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, gboolean direction);
+static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data);
 static void dissect_tlp_mem_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70, bool addr64);
 static void dissect_tlp_cfg_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70);
 static void dissect_tlp_cpl(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70);
@@ -703,7 +703,7 @@ static void dissect_pcie_frame_internal(tvbuff_t *tvb, packet_info *pinfo, proto
 
             uint32_t tlp_len = frame_len-3-5;
             tvbuff_t * tlp_tvb = tvb_new_subset_length(tvb, 3, tlp_len);
-            dissect_pcie_tlp_internal(tlp_tvb, pinfo, tree, data, direction);
+            dissect_pcie_tlp_internal(tlp_tvb, pinfo, tree, data);
 
             break;
         case K_28_2:
@@ -715,7 +715,7 @@ static void dissect_pcie_frame_internal(tvbuff_t *tvb, packet_info *pinfo, proto
     }
 }
 
-static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, gboolean direction) {
+static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data) {
     uint32_t tlp_len = tvb_reported_length(tvb);
     proto_item * tlp_tree_item = proto_tree_add_item(tree, PROTO_PCIE_TLP, tvb, 0, tlp_len, ENC_NA);
     proto_tree * tlp_tree = proto_item_add_subtree(tlp_tree_item, ETT_PCIE_TLP);
