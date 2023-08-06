@@ -779,6 +779,7 @@ static void dissect_pcie_frame_internal(tvbuff_t *tvb, packet_info *pinfo, proto
 static void dissect_pcie_dllp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data);
 static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data);
 static void dissect_tlp_mem_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70, bool addr64);
+static void dissect_tlp_io_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70);
 static void dissect_tlp_cfg_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70);
 static void dissect_tlp_cpl(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70);
 
@@ -1003,6 +1004,10 @@ static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_t
             col_append_fstr(pinfo->cinfo, COL_INFO, ", %d dw", payload_len);
             dissect_tlp_mem_req(tvb, pinfo, tlp_tree, data, &req_id, &tag70, (tlp_fmt & 0b001) != 0);
             break;
+        case 0b00000010:
+        case 0b01000010:
+            dissect_tlp_io_req(tvb, pinfo, tlp_tree, data, &req_id, &tag70);
+            break;
         case 0b00000100:
         case 0b01000100:
         case 0b00000101:
@@ -1152,6 +1157,18 @@ static void dissect_tlp_mem_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *t
         col_clear(pinfo->cinfo, COL_DEF_DST);
         col_add_fstr(pinfo->cinfo, COL_DEF_DST, "0x%08x", addr);
     }
+}
+
+static void dissect_tlp_io_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70) {
+    dissect_tlp_req_header(tvb, pinfo, tree, data, req_id, tag70);
+
+    uint32_t addr = 0;
+    proto_tree_add_item_ret_uint(tree, HF_PCIE_TLP_ADDR_32, tvb, 8, 4, ENC_BIG_ENDIAN, &addr);
+
+    col_append_fstr(pinfo->cinfo, COL_INFO, " @ 0x%08x", addr);
+
+    col_clear(pinfo->cinfo, COL_DEF_DST);
+    col_add_fstr(pinfo->cinfo, COL_DEF_DST, "0x%08x", addr);
 }
 
 static void dissect_tlp_cfg_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70) {
