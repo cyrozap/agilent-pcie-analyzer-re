@@ -21,6 +21,8 @@
 #include <stdint.h>
 
 #include <epan/conversation.h>
+#include <epan/crc32-tvb.h>
+#include <epan/expert.h>
 #include <epan/packet.h>
 #include <epan/proto.h>
 
@@ -751,6 +753,14 @@ static int * const ETT[] = {
         &ETT_PCIE_TLP_CPL_ID,
 };
 
+static expert_field EI_PCIE_FRAME_LCRC_INVALID = EI_INIT;
+
+static ei_register_info EI_PCIE_FRAME[] = {
+    { &EI_PCIE_FRAME_LCRC_INVALID,
+        { "pcie.frame.tlp.lcrc_invalid", PI_CHECKSUM, PI_WARN,
+            "LCRC is invalid", EXPFILL }
+    },
+};
 
 static void dissect_pcie_frame_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, gboolean direction);
 static void dissect_pcie_dllp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data);
@@ -857,7 +867,14 @@ static void dissect_pcie_frame_internal(tvbuff_t *tvb, packet_info *pinfo, proto
             tvbuff_t * tlp_tvb = tvb_new_subset_length(tvb, tlp_offset, tlp_len);
             dissect_pcie_tlp_internal(tlp_tvb, pinfo, tree, data);
 
-            proto_tree_add_item(frame_tree, HF_PCIE_FRAME_TLP_LCRC, tvb, tlp_offset+tlp_len, 4, ENC_LITTLE_ENDIAN);
+            uint32_t lcrc = 0;
+            proto_item * lcrc_item = proto_tree_add_item_ret_uint(frame_tree, HF_PCIE_FRAME_TLP_LCRC, tvb, tlp_offset+tlp_len, 4, ENC_LITTLE_ENDIAN, &lcrc);
+
+            // Verify the LCRC in the frame matches the calculated value.
+            if (lcrc != crc32_ccitt_tvb_offset(tvb, 1, 2 + tlp_len)) {
+                expert_add_info(pinfo, lcrc_item, &EI_PCIE_FRAME_LCRC_INVALID);
+            }
+
             proto_tree_add_item(frame_tree, HF_PCIE_FRAME_END_TAG, tvb, tlp_offset+tlp_len+4, 1, ENC_BIG_ENDIAN);
 
             break;
@@ -1168,6 +1185,9 @@ static void proto_register_pcie_frame() {
     );
 
     proto_register_field_array(PROTO_PCIE_FRAME, HF_PCIE_FRAME, array_length(HF_PCIE_FRAME));
+
+    expert_module_t * expert = expert_register_protocol(PROTO_PCIE_FRAME);
+    expert_register_field_array(expert, EI_PCIE_FRAME, array_length(EI_PCIE_FRAME));
 }
 
 static void proto_register_pcie_dllp() {
