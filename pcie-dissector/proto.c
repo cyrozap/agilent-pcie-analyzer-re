@@ -37,7 +37,7 @@ typedef struct tlp_transaction_s {
 } tlp_transaction_t;
 
 typedef struct tlp_conv_info_s {
-    wmem_map_t *pdus;
+    wmem_map_t *pdus_by_txid;
     wmem_map_t *pdus_by_record_num;
 } tlp_conv_info_t;
 
@@ -1029,7 +1029,7 @@ static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_t
     tlp_transaction_t * tlp_trans = NULL;
     if (!tlp_info) {
         tlp_info = wmem_new(wmem_file_scope(), tlp_conv_info_t);
-        tlp_info->pdus=wmem_map_new(wmem_file_scope(), g_direct_hash, g_direct_equal);
+        tlp_info->pdus_by_txid=wmem_map_new(wmem_file_scope(), g_direct_hash, g_direct_equal);
         tlp_info->pdus_by_record_num=wmem_map_new(wmem_file_scope(), g_direct_hash, g_direct_equal);
 
         conversation_add_proto_data(conversation, PROTO_PCIE_TLP, tlp_info);
@@ -1043,11 +1043,11 @@ static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_t
             tlp_trans->cpl_frame = 0;
             tlp_trans->req_time = pinfo->fd->abs_ts;
 
-            wmem_map_insert(tlp_info->pdus, GUINT_TO_POINTER(tlp_transaction_id), (void *)tlp_trans);
+            wmem_map_insert(tlp_info->pdus_by_txid, GUINT_TO_POINTER(tlp_transaction_id), (void *)tlp_trans);
             wmem_map_insert(tlp_info->pdus_by_record_num, GUINT_TO_POINTER(pinfo->num), (void *)tlp_trans);
         } else if (is_completion(tlp_fmt_type)) {
             /* This is a completion */
-            tlp_trans = (tlp_transaction_t *)wmem_map_remove(tlp_info->pdus, GUINT_TO_POINTER(tlp_transaction_id));
+            tlp_trans = (tlp_transaction_t *)wmem_map_remove(tlp_info->pdus_by_txid, GUINT_TO_POINTER(tlp_transaction_id));
             if (tlp_trans) {
                 tlp_trans->cpl_frame = pinfo->num;
                 wmem_map_insert(tlp_info->pdus_by_record_num, GUINT_TO_POINTER(pinfo->num), (void *)tlp_trans);
