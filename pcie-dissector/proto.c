@@ -897,7 +897,7 @@ static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_t
     uint32_t payload_len = 0;
     proto_tree_add_item_ret_uint(dw0_tree, HF_PCIE_TLP_LENGTH, tvb, 1, 3, ENC_BIG_ENDIAN, &payload_len);
 
-    bool has_payload = tlp_fmt & 0b010;
+    bool has_payload = (tlp_fmt & 0b010) != 0;
 
     uint32_t req_id = 0;
     uint32_t tag70 = 0;
