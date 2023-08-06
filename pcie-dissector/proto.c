@@ -327,6 +327,40 @@ static const value_string CFG_REGS[] = {
     { 0, NULL },
 };
 
+static const value_string TLP_MSG_CODES[] = {
+    { 0b00100000, "Assert_INTA" },
+    { 0b00100001, "Assert_INTB" },
+    { 0b00100010, "Assert_INTC" },
+    { 0b00100011, "Assert_INTD" },
+    { 0b00100100, "Deassert_INTA" },
+    { 0b00100101, "Deassert_INTB" },
+    { 0b00100110, "Deassert_INTC" },
+    { 0b00100111, "Deassert_INTD" },
+    { 0b00010100, "PM_Active_State_Nak" },
+    { 0b00011000, "PM_PME" },
+    { 0b00011001, "PME_Turn_Off" },
+    { 0b00011011, "PME_TO_Ack" },
+    { 0b00110000, "ERR_COR" },
+    { 0b00110001, "ERR_NONFATAL" },
+    { 0b00110011, "ERR_FATAL" },
+    { 0b00000000, "Unlock" },
+    { 0b01010000, "Set_Slot_Power_Limit" },
+    { 0b01111110, "Vendor_Defined Type 0" },
+    { 0b01111111, "Vendor_Defined Type 1" },
+    { 0b01000001, "Attention_Indicator_On" },
+    { 0b01000011, "Attention_Indicator_Blink" },
+    { 0b01000000, "Attention_Indicator_Off" },
+    { 0b01000101, "Power_Indicator_On" },
+    { 0b01000111, "Power_Indicator_Blink" },
+    { 0b01000100, "Power_Indicator_Off" },
+    { 0b01001000, "Attention_Button_Pressed" },
+    { 0b00010000, "LTR" },
+    { 0b00010010, "OBFF" },
+    { 0b01010010, "PTM Request" },
+    { 0b01010011, "PTM Response" },
+    { 0, NULL },
+};
+
 static dissector_handle_t PCIE_HANDLE = NULL;
 
 static int PROTO_PCIE = -1;
@@ -376,6 +410,7 @@ static int HF_PCIE_TLP_TAG_7_0 = -1;
 static int HF_PCIE_TLP_TAG = -1;
 static int HF_PCIE_TLP_LAST_DW_BE = -1;
 static int HF_PCIE_TLP_FIRST_DW_BE = -1;
+static int HF_PCIE_TLP_MSG_CODE = -1;
 static int HF_PCIE_TLP_ADDR_32 = -1;
 static int HF_PCIE_TLP_ADDR_64 = -1;
 static int HF_PCIE_TLP_CPL_ID = -1;
@@ -631,6 +666,12 @@ static hf_register_info HF_PCIE_TLP[] = {
         NULL, 0x0F,
         NULL, HFILL }
     },
+    { &HF_PCIE_TLP_MSG_CODE,
+        { "Message Code", "pcie.tlp.msg.code",
+        FT_UINT8, BASE_HEX,
+        VALS(TLP_MSG_CODES), 0x0,
+        NULL, HFILL }
+    },
     { &HF_PCIE_TLP_ADDR_32,
         { "Address", "pcie.tlp.addr",
         FT_UINT32, BASE_HEX,
@@ -781,6 +822,7 @@ static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_t
 static void dissect_tlp_mem_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70, bool addr64);
 static void dissect_tlp_io_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70);
 static void dissect_tlp_cfg_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70);
+static void dissect_tlp_msg_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70);
 static void dissect_tlp_cpl(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70);
 
 static bool is_posted_request(uint32_t fmt_type) {
@@ -1022,6 +1064,10 @@ static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_t
             }
             break;
         default:
+            if ((tlp_fmt_type & 0b10111000) == 0b00110000) {
+                dissect_tlp_msg_req(tvb, pinfo, tlp_tree, data, &req_id, &tag70);
+                break;
+            }
             return;
     }
 
@@ -1119,7 +1165,7 @@ static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_t
     }
 }
 
-static void dissect_tlp_req_header(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70) {
+static void dissect_tlp_req_id_and_tag70(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70) {
     proto_item * req_id_item = proto_tree_add_item_ret_uint(tree, HF_PCIE_TLP_REQ_ID, tvb, 4, 2, ENC_BIG_ENDIAN, req_id);
     proto_tree * req_id_tree = proto_item_add_subtree(req_id_item, ETT_PCIE_TLP_REQ_ID);
     uint32_t req_bus = 0;
@@ -1133,6 +1179,11 @@ static void dissect_tlp_req_header(tvbuff_t *tvb, packet_info *pinfo, proto_tree
     col_add_fstr(pinfo->cinfo, COL_DEF_SRC, "%02x:%02x.%x", req_bus, req_dev, req_fun);
 
     proto_tree_add_item_ret_uint(tree, HF_PCIE_TLP_TAG_7_0, tvb, 6, 1, ENC_BIG_ENDIAN, tag70);
+}
+
+static void dissect_tlp_req_header(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70) {
+    dissect_tlp_req_id_and_tag70(tvb, pinfo, tree, data, req_id, tag70);
+
     proto_tree_add_item(tree, HF_PCIE_TLP_LAST_DW_BE, tvb, 7, 1, ENC_BIG_ENDIAN);
     proto_tree_add_item(tree, HF_PCIE_TLP_FIRST_DW_BE, tvb, 7, 1, ENC_BIG_ENDIAN);
 }
@@ -1190,6 +1241,12 @@ static void dissect_tlp_cfg_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *t
     proto_tree_add_item_ret_uint(tree, HF_PCIE_TLP_REG, tvb, 10, 2, ENC_BIG_ENDIAN, &reg_num);
 
     col_append_fstr(pinfo->cinfo, COL_INFO, " @ 0x%03x", 4*reg_num);
+}
+
+static void dissect_tlp_msg_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70) {
+    dissect_tlp_req_id_and_tag70(tvb, pinfo, tree, data, req_id, tag70);
+
+    proto_tree_add_item(tree, HF_PCIE_TLP_MSG_CODE, tvb, 7, 1, ENC_BIG_ENDIAN);
 }
 
 static void dissect_tlp_cpl(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70) {
