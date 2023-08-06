@@ -36,14 +36,8 @@ typedef struct tlp_transaction_s {
     nstime_t req_time;
 } tlp_transaction_t;
 
-typedef struct tlp_tag_info_s {
-    uint32_t last_req_tag;
-    uint64_t tlp_tag_epoch;
-} tlp_tag_info_t;
-
 typedef struct tlp_conv_info_s {
     wmem_map_t *pdus;
-    wmem_map_t *tags;
     wmem_map_t *pdus_by_record_num;
 } tlp_conv_info_t;
 
@@ -1036,7 +1030,6 @@ static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_t
     if (!tlp_info) {
         tlp_info = wmem_new(wmem_file_scope(), tlp_conv_info_t);
         tlp_info->pdus=wmem_map_new(wmem_file_scope(), g_direct_hash, g_direct_equal);
-        tlp_info->tags=wmem_map_new(wmem_file_scope(), g_direct_hash, g_direct_equal);
         tlp_info->pdus_by_record_num=wmem_map_new(wmem_file_scope(), g_direct_hash, g_direct_equal);
 
         conversation_add_proto_data(conversation, PROTO_PCIE_TLP, tlp_info);
@@ -1050,34 +1043,14 @@ static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_t
             tlp_trans->cpl_frame = 0;
             tlp_trans->req_time = pinfo->fd->abs_ts;
 
-            tlp_tag_info_t * tag_info = (tlp_tag_info_t *)wmem_map_lookup(tlp_info->tags, GUINT_TO_POINTER(req_id));
-            if (!tag_info) {
-                tag_info = wmem_new(wmem_file_scope(), tlp_tag_info_t);
-                wmem_map_insert(tlp_info->tags, GUINT_TO_POINTER(req_id), (void *)tag_info);
-
-                tag_info->tlp_tag_epoch = 0;
-            } else {
-                if (tlp_tag <= tag_info->last_req_tag) {
-                    tag_info->tlp_tag_epoch += 1;
-                }
-
-                tlp_transaction_id |= tag_info->tlp_tag_epoch << 32;
-            }
-
-            tag_info->last_req_tag = tlp_tag;
-
             wmem_map_insert(tlp_info->pdus, GUINT_TO_POINTER(tlp_transaction_id), (void *)tlp_trans);
             wmem_map_insert(tlp_info->pdus_by_record_num, GUINT_TO_POINTER(pinfo->num), (void *)tlp_trans);
         } else if (is_completion(tlp_fmt_type)) {
             /* This is a completion */
-            tlp_tag_info_t * tag_info = (tlp_tag_info_t *)wmem_map_lookup(tlp_info->tags, GUINT_TO_POINTER(req_id));
-            if (tag_info) {
-                tlp_transaction_id |= tag_info->tlp_tag_epoch << 32;
-                tlp_trans = (tlp_transaction_t *)wmem_map_remove(tlp_info->pdus, GUINT_TO_POINTER(tlp_transaction_id));
-                if (tlp_trans) {
-                    tlp_trans->cpl_frame = pinfo->num;
-                    wmem_map_insert(tlp_info->pdus_by_record_num, GUINT_TO_POINTER(pinfo->num), (void *)tlp_trans);
-                }
+            tlp_trans = (tlp_transaction_t *)wmem_map_remove(tlp_info->pdus, GUINT_TO_POINTER(tlp_transaction_id));
+            if (tlp_trans) {
+                tlp_trans->cpl_frame = pinfo->num;
+                wmem_map_insert(tlp_info->pdus_by_record_num, GUINT_TO_POINTER(pinfo->num), (void *)tlp_trans);
             }
         }
     } else {
