@@ -804,11 +804,12 @@ static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
         col_set_str(pinfo->cinfo, COL_DEF_DST, "Downstream Device");
     }
 
-    if ((!data_valid) || (data_valid_count < 1))  {
-        return tvb_captured_length(tvb);
+    tvbuff_t * frame_tvb;
+    if (data_valid) {
+        frame_tvb = tvb_new_subset_length(tvb, PCIE_CAPTURE_HEADER_SIZE, data_valid_count);
+    } else {
+        frame_tvb = tvb_new_subset_remaining(tvb, PCIE_CAPTURE_HEADER_SIZE);
     }
-
-    tvbuff_t * frame_tvb = tvb_new_subset_length(tvb, PCIE_CAPTURE_HEADER_SIZE, data_valid_count);
     dissect_pcie_frame_internal(frame_tvb, pinfo, tree, data, direction);
 
     return tvb_captured_length(tvb);
