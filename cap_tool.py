@@ -118,7 +118,9 @@ def main():
         bytes_valid = record.bytes_valid & 0x7ff
         bytes_valid_flag = record.bytes_valid >> 15
 
-        valid_data = record_data[:bytes_valid]
+        valid_data = record_data
+        if bytes_valid_flag:
+            valid_data = record_data[:bytes_valid]
 
         if args.filter_errors:
             if get_bit(record.flags, 3):
