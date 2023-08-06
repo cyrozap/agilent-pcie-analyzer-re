@@ -1001,23 +1001,29 @@ static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_t
     col_clear(pinfo->cinfo, COL_INFO);
     col_add_str(pinfo->cinfo, COL_INFO, try_val_to_str(tlp_fmt_type, TLP_FMT_TYPE_SHORT));
 
-    switch (tlp_type) {
-        case 0b00000:
+    switch (tlp_fmt_type) {
+        case 0b00000000:
+        case 0b00100000:
+        case 0b01000000:
+        case 0b01100000:
             col_append_fstr(pinfo->cinfo, COL_INFO, ", %d dw", payload_len);
             dissect_tlp_mem_req(tvb, pinfo, tlp_tree, data, &req_id, &tag70, (tlp_fmt & 0b001) != 0);
             break;
-        case 0b00100:
-        case 0b00101:
+        case 0b00000100:
+        case 0b01000100:
+        case 0b00000101:
+        case 0b01000101:
             dissect_tlp_cfg_req(tvb, pinfo, tlp_tree, data, &req_id, &tag70);
             break;
-        case 0b01010:
+        case 0b00001010:
+        case 0b01001010:
             dissect_tlp_cpl(tvb, pinfo, tlp_tree, data, &req_id, &tag70);
             if (has_payload) {
                 col_append_fstr(pinfo->cinfo, COL_INFO, ", %d dw", payload_len);
             }
             break;
         default:
-            break;
+            return;
     }
 
     uint32_t tlp_tag = (tag9 << 9) | (tag8 << 8) | tag70;
