@@ -1053,7 +1053,7 @@ static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_t
             tlp_tag_info_t * tag_info = (tlp_tag_info_t *)wmem_map_lookup(tlp_info->tags, GUINT_TO_POINTER(req_id));
             if (!tag_info) {
                 tag_info = wmem_new(wmem_file_scope(), tlp_tag_info_t);
-                wmem_map_insert(tlp_info->tags, GUINT_TO_POINTER(tlp_transaction_id), (void *)tag_info);
+                wmem_map_insert(tlp_info->tags, GUINT_TO_POINTER(req_id), (void *)tag_info);
 
                 tag_info->tlp_tag_epoch = 0;
             } else {
