@@ -25,6 +25,7 @@
 #include <epan/expert.h>
 #include <epan/packet.h>
 #include <epan/proto.h>
+#include <wsutil/crc32.h>
 
 #include "proto.h"
 
@@ -755,10 +756,19 @@ static int * const ETT[] = {
 
 static expert_field EI_PCIE_FRAME_LCRC_INVALID = EI_INIT;
 
+static expert_field EI_PCIE_TLP_ECRC_INVALID = EI_INIT;
+
 static ei_register_info EI_PCIE_FRAME[] = {
     { &EI_PCIE_FRAME_LCRC_INVALID,
         { "pcie.frame.tlp.lcrc_invalid", PI_CHECKSUM, PI_WARN,
             "LCRC is invalid", EXPFILL }
+    },
+};
+
+static ei_register_info EI_PCIE_TLP[] = {
+    { &EI_PCIE_TLP_ECRC_INVALID,
+        { "pcie.tlp.ecrc_invalid", PI_CHECKSUM, PI_WARN,
+            "ECRC is invalid", EXPFILL }
     },
 };
 
@@ -1037,7 +1047,19 @@ static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_t
         if (has_payload) {
             ecrc_dw_offset += payload_len;
         }
-        proto_tree_add_item(tlp_tree, HF_PCIE_TLP_ECRC, tvb, 4*ecrc_dw_offset, 4, ENC_LITTLE_ENDIAN);
+
+        uint32_t ecrc = 0;
+        proto_item * ecrc_item = proto_tree_add_item_ret_uint(tlp_tree, HF_PCIE_TLP_ECRC, tvb, 4*ecrc_dw_offset, 4, ENC_LITTLE_ENDIAN, &ecrc);
+
+        // Calculate a partial CRC on DW0, which first needs to be modified to set all the bits in fields defined as "Variant".
+        uint32_t modified_dw0 = tvb_get_ntohl(tvb, 0) | 0x01004000;
+        uint8_t modified_dw0_buf[] = { modified_dw0 >> 24, modified_dw0 >> 16, modified_dw0 >> 8, modified_dw0 };
+        uint32_t crc_seed = crc32_ccitt_seed(modified_dw0_buf, 4, CRC32_CCITT_SEED) ^ 0xFFFFFFFF;
+
+        // Validate the CRC.
+        if (ecrc != crc32_ccitt_tvb_offset_seed(tvb, 4, 4*ecrc_dw_offset-4, crc_seed)) {
+            expert_add_info(pinfo, ecrc_item, &EI_PCIE_TLP_ECRC_INVALID);
+        }
     }
 
     proto_item_set_generated(proto_tree_add_uint_format_value(tlp_tree, HF_PCIE_TLP_TAG, tvb, 0, 0, tlp_tag, "0x%03x", tlp_tag));
@@ -1208,6 +1230,9 @@ static void proto_register_pcie_tlp() {
     );
 
     proto_register_field_array(PROTO_PCIE_TLP, HF_PCIE_TLP, array_length(HF_PCIE_TLP));
+
+    expert_module_t * expert = expert_register_protocol(PROTO_PCIE_TLP);
+    expert_register_field_array(expert, EI_PCIE_TLP, array_length(EI_PCIE_TLP));
 }
 
 void proto_register_pcie() {
