@@ -756,12 +756,21 @@ static int * const ETT[] = {
 
 static expert_field EI_PCIE_FRAME_LCRC_INVALID = EI_INIT;
 
+static expert_field EI_PCIE_DLLP_CRC_INVALID = EI_INIT;
+
 static expert_field EI_PCIE_TLP_ECRC_INVALID = EI_INIT;
 
 static ei_register_info EI_PCIE_FRAME[] = {
     { &EI_PCIE_FRAME_LCRC_INVALID,
         { "pcie.frame.tlp.lcrc_invalid", PI_CHECKSUM, PI_WARN,
             "LCRC is invalid", EXPFILL }
+    },
+};
+
+static ei_register_info EI_PCIE_DLLP[] = {
+    { &EI_PCIE_DLLP_CRC_INVALID,
+        { "pcie.dllp.crc_invalid", PI_CHECKSUM, PI_WARN,
+            "CRC is invalid", EXPFILL }
     },
 };
 
@@ -793,6 +802,38 @@ static bool is_posted_request(uint32_t fmt_type) {
 
 static bool is_completion(uint32_t fmt_type) {
     return (fmt_type & 0b10111110) == 0b00001010;
+}
+
+// Borrowed from epan/dissectors/packet-btbredr_rf.c
+static uint8_t reverse_bits(uint8_t value) {
+    value = ((value >> 1) & 0x55) | ((value << 1) & 0xaa);
+    value = ((value >> 2) & 0x33) | ((value << 2) & 0xcc);
+    value = ((value >> 4) & 0x0f) | ((value << 4) & 0xf0);
+    return value;
+}
+
+static uint16_t dllp_crc(const uint8_t *buf, uint32_t len) {
+    uint16_t crc = 0xFFFF;
+    for (uint32_t i = 0; i < len; i++) {
+        for (uint32_t j = 0; j < 8; j++) {
+            uint16_t bit = (buf[i] >> j) & 1;
+            bit ^= crc >> 15;
+            crc = (crc << 1) | bit;
+            if (bit) {
+                crc ^= 0x100b & 0xfffe;
+            }
+        }
+    }
+    crc ^= 0xFFFF;
+    crc = (reverse_bits(crc) << 8) | reverse_bits(crc >> 8);
+    return crc;
+}
+
+static uint16_t dllp_crc16_tvb_offset(tvbuff_t *tvb, uint32_t offset, uint32_t len) {
+    tvb_ensure_bytes_exist(tvb, offset, len);
+    const uint8_t * buf = tvb_get_ptr(tvb, offset, len);
+
+    return dllp_crc(buf, len);
 }
 
 static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data) {
@@ -904,7 +945,12 @@ static void dissect_pcie_dllp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_
     proto_item * dllp_tree_item = proto_tree_add_item(tree, PROTO_PCIE_DLLP, tvb, 0, dllp_len, ENC_NA);
     proto_tree * dllp_tree = proto_item_add_subtree(dllp_tree_item, ETT_PCIE_DLLP);
     proto_tree_add_item(dllp_tree, HF_PCIE_DLLP_TYPE, tvb, 0, 1, ENC_BIG_ENDIAN);
-    proto_tree_add_item(dllp_tree, HF_PCIE_DLLP_CRC, tvb, 4, 2, ENC_LITTLE_ENDIAN);
+
+    uint32_t crc = 0;
+    proto_item * crc_item = proto_tree_add_item_ret_uint(dllp_tree, HF_PCIE_DLLP_CRC, tvb, 4, 2, ENC_LITTLE_ENDIAN, &crc);
+    if (crc != dllp_crc16_tvb_offset(tvb, 0, 4)) {
+        expert_add_info(pinfo, crc_item, &EI_PCIE_DLLP_CRC_INVALID);
+    }
 }
 
 static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data) {
@@ -1220,6 +1266,9 @@ static void proto_register_pcie_dllp() {
     );
 
     proto_register_field_array(PROTO_PCIE_DLLP, HF_PCIE_DLLP, array_length(HF_PCIE_DLLP));
+
+    expert_module_t * expert = expert_register_protocol(PROTO_PCIE_DLLP);
+    expert_register_field_array(expert, EI_PCIE_DLLP, array_length(EI_PCIE_DLLP));
 }
 
 static void proto_register_pcie_tlp() {
