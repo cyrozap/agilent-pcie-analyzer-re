@@ -829,13 +829,35 @@ static void dissect_pcie_frame_internal(tvbuff_t *tvb, packet_info *pinfo, proto
             proto_tree_add_item(frame_tree, HF_PCIE_FRAME_TLP_RESERVED, tvb, 1, 2, ENC_BIG_ENDIAN);
             proto_tree_add_item(frame_tree, HF_PCIE_FRAME_TLP_SEQ, tvb, 1, 2, ENC_BIG_ENDIAN);
 
-            // TODO: Dissect TLP first, then calculate offset of LCRC and end tag depending on how many bytes were in the TLP.
-            proto_tree_add_item(frame_tree, HF_PCIE_FRAME_TLP_LCRC, tvb, frame_len-5, 4, ENC_LITTLE_ENDIAN);
-            proto_tree_add_item(frame_tree, HF_PCIE_FRAME_END_TAG, tvb, frame_len-1, 1, ENC_BIG_ENDIAN);
+            const uint32_t tlp_offset = 3;
 
-            uint32_t tlp_len = frame_len-3-5;
-            tvbuff_t * tlp_tvb = tvb_new_subset_length(tvb, 3, tlp_len);
+            // Peek at the first DW of the TLP to determine the length of the TLP.
+            uint32_t tlp_dw0 = tvb_get_ntohl(tvb, tlp_offset);
+            uint32_t tlp_fmt_type = tlp_dw0 >> 24;
+            uint32_t tlp_fmt = (tlp_fmt_type >> 5);
+            uint32_t header_dw_count = 3;
+            if (tlp_fmt & 0b001) {
+                header_dw_count = 4;
+            }
+            uint32_t payload_dw_count = 0;
+            if (tlp_fmt & 0b010) {
+                payload_dw_count = tlp_dw0 & ((1 << 10) - 1);
+                if (payload_dw_count == 0) {
+                    payload_dw_count = 1 << 10;
+                }
+            }
+            uint32_t ecrc_dw_count = 0;
+            if (tlp_dw0 & (1 << 15)) {
+                ecrc_dw_count = 1;
+            }
+            uint32_t tlp_len = 4 * (header_dw_count + payload_dw_count + ecrc_dw_count);
+
+            // Dissect the TLP.
+            tvbuff_t * tlp_tvb = tvb_new_subset_length(tvb, tlp_offset, tlp_len);
             dissect_pcie_tlp_internal(tlp_tvb, pinfo, tree, data);
+
+            proto_tree_add_item(frame_tree, HF_PCIE_FRAME_TLP_LCRC, tvb, tlp_offset+tlp_len, 4, ENC_LITTLE_ENDIAN);
+            proto_tree_add_item(frame_tree, HF_PCIE_FRAME_END_TAG, tvb, tlp_offset+tlp_len+4, 1, ENC_BIG_ENDIAN);
 
             break;
         case K_28_2:
