@@ -309,6 +309,14 @@ static const value_string TLP_ADDRESS_TYPE[] = {
     { 0, NULL },
 };
 
+static const value_string TLP_PROCESSING_HINT[] = {
+    { 0b00, "Bi-directional data structure" },
+    { 0b01, "Requester" },
+    { 0b10, "Target" },
+    { 0b11, "Target with Priority" },
+    { 0, NULL },
+};
+
 static const value_string TLP_CPL_STATUS[] = {
     { 0b000, "Successful Completion (SC)" },
     { 0b001, "Unsupported Request (UR)" },
@@ -419,8 +427,11 @@ static int HF_PCIE_TLP_TAG = -1;
 static int HF_PCIE_TLP_LAST_DW_BE = -1;
 static int HF_PCIE_TLP_FIRST_DW_BE = -1;
 static int HF_PCIE_TLP_MSG_CODE = -1;
+static int HF_PCIE_TLP_ADDR_PH_32 = -1;
+static int HF_PCIE_TLP_ADDR_PH_64 = -1;
 static int HF_PCIE_TLP_ADDR_32 = -1;
 static int HF_PCIE_TLP_ADDR_64 = -1;
+static int HF_PCIE_TLP_PH = -1;
 static int HF_PCIE_TLP_CPL_ID = -1;
 static int HF_PCIE_TLP_CPL_BUS = -1;
 static int HF_PCIE_TLP_CPL_DEV = -1;
@@ -680,6 +691,18 @@ static hf_register_info HF_PCIE_TLP[] = {
         VALS(TLP_MSG_CODES), 0x0,
         NULL, HFILL }
     },
+    { &HF_PCIE_TLP_ADDR_PH_32,
+        { "Address and Processing Hint", "pcie.tlp.addr_ph",
+        FT_UINT32, BASE_HEX,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_ADDR_PH_64,
+        { "Address and Processing Hint", "pcie.tlp.addr_ph",
+        FT_UINT64, BASE_HEX,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
     { &HF_PCIE_TLP_ADDR_32,
         { "Address", "pcie.tlp.addr",
         FT_UINT32, BASE_HEX,
@@ -690,6 +713,12 @@ static hf_register_info HF_PCIE_TLP[] = {
         { "Address", "pcie.tlp.addr",
         FT_UINT64, BASE_HEX,
         NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_TLP_PH,
+        { "Processing Hint", "pcie.tlp.ph",
+        FT_UINT8, BASE_DEC,
+        VALS(TLP_PROCESSING_HINT), 0x3,
         NULL, HFILL }
     },
     { &HF_PCIE_TLP_CPL_ID,
@@ -786,6 +815,7 @@ static int ETT_PCIE_TLP_DW0 = -1;
 static int ETT_PCIE_TLP_FMT_TYPE = -1;
 static int ETT_PCIE_TLP_REQ_ID = -1;
 static int ETT_PCIE_TLP_CPL_ID = -1;
+static int ETT_PCIE_TLP_ADDR_PH = -1;
 static int * const ETT[] = {
         &ETT_PCIE,
         &ETT_PCIE_FRAME,
@@ -795,6 +825,7 @@ static int * const ETT[] = {
         &ETT_PCIE_TLP_FMT_TYPE,
         &ETT_PCIE_TLP_REQ_ID,
         &ETT_PCIE_TLP_CPL_ID,
+        &ETT_PCIE_TLP_ADDR_PH,
 };
 
 static expert_field EI_PCIE_FRAME_LCRC_INVALID = EI_INIT;
@@ -1227,16 +1258,34 @@ static void dissect_tlp_mem_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *t
     dissect_tlp_req_header(tvb, pinfo, tree, data, req_id, tag70);
 
     if (addr64) {
-        uint64_t addr = 0;
-        proto_tree_add_item_ret_uint64(tree, HF_PCIE_TLP_ADDR_64, tvb, 8, 8, ENC_BIG_ENDIAN, &addr);
+        uint64_t addr_ph = 0;
+        proto_item * addr_ph_item = proto_tree_add_item_ret_uint64(tree, HF_PCIE_TLP_ADDR_PH_64, tvb, 8, 8, ENC_BIG_ENDIAN, &addr_ph);
+        proto_tree * addr_ph_tree = proto_item_add_subtree(addr_ph_item, ETT_PCIE_TLP_ADDR_PH);
+
+        uint64_t addr = addr_ph & 0xFFFFFFFFFFFFFFFC;
+        proto_tree_add_uint64(addr_ph_tree, HF_PCIE_TLP_ADDR_64, tvb, 8, 8, addr);
+
+        uint32_t ph = 0;
+        proto_tree_add_item_ret_uint(addr_ph_tree, HF_PCIE_TLP_PH, tvb, 8+7, 1, ENC_BIG_ENDIAN, &ph);
+
+        proto_item_set_text(addr_ph_item, "Address: 0x%016lx, PH: %s (%d)", addr, try_val_to_str(ph, TLP_PROCESSING_HINT), ph);
 
         col_append_fstr(pinfo->cinfo, COL_INFO, " @ 0x%016lx", addr);
 
         col_clear(pinfo->cinfo, COL_DEF_DST);
         col_add_fstr(pinfo->cinfo, COL_DEF_DST, "0x%016lx", addr);
     } else {
-        uint32_t addr = 0;
-        proto_tree_add_item_ret_uint(tree, HF_PCIE_TLP_ADDR_32, tvb, 8, 4, ENC_BIG_ENDIAN, &addr);
+        uint32_t addr_ph = 0;
+        proto_item * addr_ph_item = proto_tree_add_item_ret_uint(tree, HF_PCIE_TLP_ADDR_PH_32, tvb, 8, 4, ENC_BIG_ENDIAN, &addr_ph);
+        proto_tree * addr_ph_tree = proto_item_add_subtree(addr_ph_item, ETT_PCIE_TLP_ADDR_PH);
+
+        uint32_t addr = addr_ph & 0xFFFFFFFC;
+        proto_tree_add_uint(addr_ph_tree, HF_PCIE_TLP_ADDR_32, tvb, 8, 4, addr);
+
+        uint32_t ph = 0;
+        proto_tree_add_item_ret_uint(addr_ph_tree, HF_PCIE_TLP_PH, tvb, 8+3, 1, ENC_BIG_ENDIAN, &ph);
+
+        proto_item_set_text(addr_ph_item, "Address: 0x%08x, PH: %s (%d)", addr, try_val_to_str(ph, TLP_PROCESSING_HINT), ph);
 
         col_append_fstr(pinfo->cinfo, COL_INFO, " @ 0x%08x", addr);
 
