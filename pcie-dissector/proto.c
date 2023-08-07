@@ -538,7 +538,7 @@ static hf_register_info HF_PCIE_DLLP[] = {
 static hf_register_info HF_PCIE_TLP[] = {
     { &HF_PCIE_TLP_DW0,
         { "TLP DW 0", "pcie.tlp.dw0",
-        FT_UINT32, BASE_HEX,
+        FT_NONE, BASE_NONE,
         NULL, 0x0,
         NULL, HFILL }
     },
@@ -1003,12 +1003,14 @@ static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_t
     proto_item * tlp_tree_item = proto_tree_add_item(tree, PROTO_PCIE_TLP, tvb, 0, tlp_len, ENC_NA);
     proto_tree * tlp_tree = proto_item_add_subtree(tlp_tree_item, ETT_PCIE_TLP);
 
-    proto_item * dw0_tree_item = proto_tree_add_item(tlp_tree, HF_PCIE_TLP_DW0, tvb, 0, 4, ENC_BIG_ENDIAN);
+    proto_item * dw0_tree_item = proto_tree_add_item(tlp_tree, HF_PCIE_TLP_DW0, tvb, 0, 4, ENC_NA);
     proto_tree * dw0_tree = proto_item_add_subtree(dw0_tree_item, ETT_PCIE_TLP_DW0);
 
     uint32_t tlp_fmt_type = 0;
     proto_item * fmt_type_item = proto_tree_add_item_ret_uint(dw0_tree, HF_PCIE_TLP_FMT_TYPE, tvb, 0, 1, ENC_BIG_ENDIAN, &tlp_fmt_type);
     proto_tree * fmt_type_tree = proto_item_add_subtree(fmt_type_item, ETT_PCIE_TLP_FMT_TYPE);
+
+    proto_item_append_text(dw0_tree_item, ": %s", try_val_to_str(tlp_fmt_type, TLP_FMT_TYPE_SHORT));
 
     uint32_t tlp_fmt = 0;
     proto_tree_add_item_ret_uint(fmt_type_tree, HF_PCIE_TLP_FMT, tvb, 0, 1, ENC_BIG_ENDIAN, &tlp_fmt);
@@ -1024,19 +1026,44 @@ static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_t
     // Fields Present in All TLP Headers
     uint32_t tag9 = 0;
     proto_tree_add_item_ret_uint(dw0_tree, HF_PCIE_TLP_T9, tvb, 1, 3, ENC_BIG_ENDIAN, &tag9);
-    proto_tree_add_item(dw0_tree, HF_PCIE_TLP_TC, tvb, 1, 3, ENC_BIG_ENDIAN);
+
+    uint32_t traffic_class = 0;
+    proto_tree_add_item_ret_uint(dw0_tree, HF_PCIE_TLP_TC, tvb, 1, 3, ENC_BIG_ENDIAN, &traffic_class);
+    if (traffic_class > 0) {
+        proto_item_append_text(dw0_tree_item, ", TC%d", traffic_class);
+    }
+
     uint32_t tag8 = 0;
     proto_tree_add_item_ret_uint(dw0_tree, HF_PCIE_TLP_T8, tvb, 1, 3, ENC_BIG_ENDIAN, &tag8);
+
     proto_tree_add_item(dw0_tree, HF_PCIE_TLP_ATTR2, tvb, 1, 3, ENC_BIG_ENDIAN);
-    proto_tree_add_item(dw0_tree, HF_PCIE_TLP_LN, tvb, 1, 3, ENC_BIG_ENDIAN);
+
+    gboolean lightweight_notification = 0;
+    proto_tree_add_item_ret_boolean(dw0_tree, HF_PCIE_TLP_LN, tvb, 1, 3, ENC_BIG_ENDIAN, &lightweight_notification);
+    if (lightweight_notification) {
+        proto_item_append_text(dw0_tree_item, ", LN");
+    }
+
     proto_tree_add_item(dw0_tree, HF_PCIE_TLP_TH, tvb, 1, 3, ENC_BIG_ENDIAN);
+
     gboolean tlp_digest = 0;
     proto_tree_add_item_ret_boolean(dw0_tree, HF_PCIE_TLP_TD, tvb, 1, 3, ENC_BIG_ENDIAN, &tlp_digest);
-    proto_tree_add_item(dw0_tree, HF_PCIE_TLP_EP, tvb, 1, 3, ENC_BIG_ENDIAN);
+
+    gboolean error_poisoned = 0;
+    proto_tree_add_item_ret_boolean(dw0_tree, HF_PCIE_TLP_EP, tvb, 1, 3, ENC_BIG_ENDIAN, &error_poisoned);
+    if (error_poisoned) {
+        proto_item_append_text(dw0_tree_item, ", EP");
+    }
+
     proto_tree_add_item(dw0_tree, HF_PCIE_TLP_ATTR10, tvb, 1, 3, ENC_BIG_ENDIAN);
+
     proto_tree_add_item(dw0_tree, HF_PCIE_TLP_AT, tvb, 1, 3, ENC_BIG_ENDIAN);
+
     uint32_t payload_len = 0;
     proto_tree_add_item_ret_uint(dw0_tree, HF_PCIE_TLP_LENGTH, tvb, 1, 3, ENC_BIG_ENDIAN, &payload_len);
+    if (payload_len > 0) {
+        proto_item_append_text(dw0_tree_item, ", %d dw", payload_len);
+    }
 
     bool has_payload = (tlp_fmt & 0b010) != 0;
 
