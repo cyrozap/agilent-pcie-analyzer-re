@@ -301,6 +301,14 @@ static const value_string TLP_TYPE[] = {
     { 0, NULL },
 };
 
+static const value_string TLP_ADDRESS_TYPE[] = {
+    { 0b00, "Untranslated" },
+    { 0b01, "Translation Request" },
+    { 0b10, "Translated" },
+    { 0b11, "Reserved" },
+    { 0, NULL },
+};
+
 static const value_string TLP_CPL_STATUS[] = {
     { 0b000, "Successful Completion (SC)" },
     { 0b001, "Unsupported Request (UR)" },
@@ -609,7 +617,7 @@ static hf_register_info HF_PCIE_TLP[] = {
     { &HF_PCIE_TLP_AT,
         { "Address Type", "pcie.tlp.at",
         FT_UINT24, BASE_HEX,
-        NULL, 0b11 << 10,
+        VALS(TLP_ADDRESS_TYPE), 0b11 << 10,
         NULL, HFILL }
     },
     { &HF_PCIE_TLP_LENGTH,
