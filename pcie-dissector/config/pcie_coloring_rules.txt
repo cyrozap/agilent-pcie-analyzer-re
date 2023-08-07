@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: 0BSD OR CC0-1.0
+@PCIe MWr@pcie.tlp.fmt_type == 0x40 || pcie.tlp.fmt_type == 0x60@[50629,50115,65535][4626,10023,11822]
+@PCIe MRd@pcie.tlp.fmt_type == 0x00 || pcie.tlp.fmt_type == 0x20@[50115,58596,65535][4626,10023,11822]
+@PCIe CfgWr0@pcie.tlp.fmt_type == 0x44@[59367,59110,65535][4626,10023,11822]
+@PCIe CfgRd0@pcie.tlp.fmt_type == 0x04@[56026,61166,65535][4626,10023,11822]
+@PCIe Successful Completion@pcie.tlp.cpl.status == 0@[58596,65535,51143][4626,10023,11822]
+@PCIe Completion Error@pcie.tlp.cpl.status != 0@[42148,0,0][65535,64764,40092]
+@PCIe Link Management@pcie.frame@[65535,65535,65535][47802,48573,46774]
