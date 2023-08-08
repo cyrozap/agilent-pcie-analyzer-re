@@ -444,6 +444,7 @@ static int HF_PCIE_TLP_CPL_BUS = -1;
 static int HF_PCIE_TLP_CPL_DEV = -1;
 static int HF_PCIE_TLP_CPL_FUN = -1;
 static int HF_PCIE_TLP_REG = -1;
+static int HF_PCIE_TLP_CPL_STATUS_BCM_BYTE_COUNT = -1;
 static int HF_PCIE_TLP_CPL_STATUS = -1;
 static int HF_PCIE_TLP_CPL_BCM = -1;
 static int HF_PCIE_TLP_CPL_BYTE_COUNT = -1;
@@ -764,6 +765,12 @@ static hf_register_info HF_PCIE_TLP[] = {
         VALS(CFG_REGS), 0x0FFC,
         NULL, HFILL }
     },
+    { &HF_PCIE_TLP_CPL_STATUS_BCM_BYTE_COUNT,
+        { "Completion Status, BCM, and Byte Count", "pcie.tlp.cpl.status_bcm_byte_count",
+        FT_UINT16, BASE_HEX,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
     { &HF_PCIE_TLP_CPL_STATUS,
         { "Completion Status", "pcie.tlp.cpl.status",
         FT_UINT16, BASE_HEX,
@@ -828,6 +835,7 @@ static int ETT_PCIE_TLP_DW0 = -1;
 static int ETT_PCIE_TLP_FMT_TYPE = -1;
 static int ETT_PCIE_TLP_REQ_ID = -1;
 static int ETT_PCIE_TLP_CPL_ID = -1;
+static int ETT_PCIE_TLP_CPL_STATUS_BCM_BYTE_COUNT = -1;
 static int ETT_PCIE_TLP_LAST_FIRST_DW_BE = -1;
 static int ETT_PCIE_TLP_ADDR_PH = -1;
 static int * const ETT[] = {
@@ -839,6 +847,7 @@ static int * const ETT[] = {
         &ETT_PCIE_TLP_FMT_TYPE,
         &ETT_PCIE_TLP_REQ_ID,
         &ETT_PCIE_TLP_CPL_ID,
+        &ETT_PCIE_TLP_CPL_STATUS_BCM_BYTE_COUNT,
         &ETT_PCIE_TLP_LAST_FIRST_DW_BE,
         &ETT_PCIE_TLP_ADDR_PH,
 };
@@ -1366,13 +1375,21 @@ static void dissect_tlp_cpl(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree,
     col_clear(pinfo->cinfo, COL_DEF_SRC);
     col_add_fstr(pinfo->cinfo, COL_DEF_SRC, "%02x:%02x.%x", cpl_bdf.bus, cpl_bdf.dev, cpl_bdf.fun);
 
+    proto_item * status_bcm_byte_count_item = proto_tree_add_item(tree, HF_PCIE_TLP_CPL_STATUS_BCM_BYTE_COUNT, tvb, 6, 2, ENC_BIG_ENDIAN);
+    proto_tree * status_bcm_byte_count_tree = proto_item_add_subtree(status_bcm_byte_count_item, ETT_PCIE_TLP_CPL_STATUS_BCM_BYTE_COUNT);
+
     uint32_t status = 0;
-    proto_tree_add_item_ret_uint(tree, HF_PCIE_TLP_CPL_STATUS, tvb, 6, 2, ENC_BIG_ENDIAN, &status);
+    proto_tree_add_item_ret_uint(status_bcm_byte_count_tree, HF_PCIE_TLP_CPL_STATUS, tvb, 6, 2, ENC_BIG_ENDIAN, &status);
 
     col_append_fstr(pinfo->cinfo, COL_INFO, ", %s", try_val_to_str(status, TLP_CPL_STATUS_SHORT));
 
-    proto_tree_add_item(tree, HF_PCIE_TLP_CPL_BCM, tvb, 6, 2, ENC_BIG_ENDIAN);
-    proto_tree_add_item(tree, HF_PCIE_TLP_CPL_BYTE_COUNT, tvb, 6, 2, ENC_BIG_ENDIAN);
+    gboolean bcm = false;
+    proto_tree_add_item_ret_boolean(status_bcm_byte_count_tree, HF_PCIE_TLP_CPL_BCM, tvb, 6, 2, ENC_BIG_ENDIAN, &bcm);
+
+    uint32_t byte_count = 0;
+    proto_tree_add_item_ret_uint(status_bcm_byte_count_tree, HF_PCIE_TLP_CPL_BYTE_COUNT, tvb, 6, 2, ENC_BIG_ENDIAN, &byte_count);
+
+    proto_item_set_text(status_bcm_byte_count_item, "Completion Status: %s, BCM: %s, Byte Count: %d", try_val_to_str(status, TLP_CPL_STATUS_SHORT), bcm ? "True" : "False", byte_count);
 
     tlp_bdf_t req_bdf = {0};
     dissect_tlp_req_id(tree, tvb, 8, req_id, &req_bdf);
