@@ -430,6 +430,7 @@ static int HF_PCIE_TLP_REQ_DEV = -1;
 static int HF_PCIE_TLP_REQ_FUN = -1;
 static int HF_PCIE_TLP_TAG_7_0 = -1;
 static int HF_PCIE_TLP_TAG = -1;
+static int HF_PCIE_TLP_LAST_FIRST_DW_BE = -1;
 static int HF_PCIE_TLP_LAST_DW_BE = -1;
 static int HF_PCIE_TLP_FIRST_DW_BE = -1;
 static int HF_PCIE_TLP_MSG_CODE = -1;
@@ -679,6 +680,12 @@ static hf_register_info HF_PCIE_TLP[] = {
         NULL, 0x0,
         NULL, HFILL }
     },
+    { &HF_PCIE_TLP_LAST_FIRST_DW_BE,
+        { "Last/First DW Byte Enable", "pcie.tlp.last_first_dw_be",
+        FT_UINT8, BASE_HEX,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
     { &HF_PCIE_TLP_LAST_DW_BE,
         { "Last DW BE", "pcie.tlp.last_dw_be",
         FT_UINT8, BASE_HEX,
@@ -821,6 +828,7 @@ static int ETT_PCIE_TLP_DW0 = -1;
 static int ETT_PCIE_TLP_FMT_TYPE = -1;
 static int ETT_PCIE_TLP_REQ_ID = -1;
 static int ETT_PCIE_TLP_CPL_ID = -1;
+static int ETT_PCIE_TLP_LAST_FIRST_DW_BE = -1;
 static int ETT_PCIE_TLP_ADDR_PH = -1;
 static int * const ETT[] = {
         &ETT_PCIE,
@@ -831,6 +839,7 @@ static int * const ETT[] = {
         &ETT_PCIE_TLP_FMT_TYPE,
         &ETT_PCIE_TLP_REQ_ID,
         &ETT_PCIE_TLP_CPL_ID,
+        &ETT_PCIE_TLP_LAST_FIRST_DW_BE,
         &ETT_PCIE_TLP_ADDR_PH,
 };
 
@@ -1271,8 +1280,10 @@ static void dissect_tlp_req_id_and_tag70(tvbuff_t *tvb, packet_info *pinfo, prot
 static void dissect_tlp_req_header(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70) {
     dissect_tlp_req_id_and_tag70(tvb, pinfo, tree, data, req_id, tag70);
 
-    proto_tree_add_item(tree, HF_PCIE_TLP_LAST_DW_BE, tvb, 7, 1, ENC_BIG_ENDIAN);
-    proto_tree_add_item(tree, HF_PCIE_TLP_FIRST_DW_BE, tvb, 7, 1, ENC_BIG_ENDIAN);
+    proto_item * dw_be_item = proto_tree_add_item(tree, HF_PCIE_TLP_LAST_FIRST_DW_BE, tvb, 7, 1, ENC_BIG_ENDIAN);
+    proto_tree * dw_be_tree = proto_item_add_subtree(dw_be_item, ETT_PCIE_TLP_LAST_FIRST_DW_BE);
+    proto_tree_add_item(dw_be_tree, HF_PCIE_TLP_LAST_DW_BE, tvb, 7, 1, ENC_BIG_ENDIAN);
+    proto_tree_add_item(dw_be_tree, HF_PCIE_TLP_FIRST_DW_BE, tvb, 7, 1, ENC_BIG_ENDIAN);
 }
 
 static void dissect_tlp_mem_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70, bool addr64) {
