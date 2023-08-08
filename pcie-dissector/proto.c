@@ -856,6 +856,7 @@ static expert_field EI_PCIE_FRAME_LCRC_INVALID = EI_INIT;
 
 static expert_field EI_PCIE_DLLP_CRC_INVALID = EI_INIT;
 
+static expert_field EI_PCIE_TLP_CPL_STATUS_NOT_SUCCESSFUL = EI_INIT;
 static expert_field EI_PCIE_TLP_ECRC_INVALID = EI_INIT;
 
 static ei_register_info EI_PCIE_FRAME[] = {
@@ -873,6 +874,10 @@ static ei_register_info EI_PCIE_DLLP[] = {
 };
 
 static ei_register_info EI_PCIE_TLP[] = {
+    { &EI_PCIE_TLP_CPL_STATUS_NOT_SUCCESSFUL,
+        { "pcie.tlp.cpl.status_not_successful", PI_RESPONSE_CODE, PI_WARN,
+            "Completion Status is not Successful Completion (SC)", EXPFILL }
+    },
     { &EI_PCIE_TLP_ECRC_INVALID,
         { "pcie.tlp.ecrc_invalid", PI_CHECKSUM, PI_WARN,
             "ECRC is invalid", EXPFILL }
@@ -1379,7 +1384,10 @@ static void dissect_tlp_cpl(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree,
     proto_tree * status_bcm_byte_count_tree = proto_item_add_subtree(status_bcm_byte_count_item, ETT_PCIE_TLP_CPL_STATUS_BCM_BYTE_COUNT);
 
     uint32_t status = 0;
-    proto_tree_add_item_ret_uint(status_bcm_byte_count_tree, HF_PCIE_TLP_CPL_STATUS, tvb, 6, 2, ENC_BIG_ENDIAN, &status);
+    proto_item * status_item = proto_tree_add_item_ret_uint(status_bcm_byte_count_tree, HF_PCIE_TLP_CPL_STATUS, tvb, 6, 2, ENC_BIG_ENDIAN, &status);
+    if (status != 0) {
+        expert_add_info(pinfo, status_item, &EI_PCIE_TLP_CPL_STATUS_NOT_SUCCESSFUL);
+    }
 
     col_append_fstr(pinfo->cinfo, COL_INFO, ", %s", try_val_to_str(status, TLP_CPL_STATUS_SHORT));
 
