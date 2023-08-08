@@ -1245,6 +1245,14 @@ static void dissect_tlp_req_id(proto_tree *tree, tvbuff_t *tvb, int offset, uint
     proto_tree_add_item_ret_uint(req_id_tree, HF_PCIE_TLP_REQ_FUN, tvb, offset, 2, ENC_BIG_ENDIAN, &req_bdf->fun);
 }
 
+static void dissect_tlp_cpl_id(proto_tree *tree, tvbuff_t *tvb, int offset, tlp_bdf_t *cpl_bdf) {
+    proto_item * cpl_id_item = proto_tree_add_item(tree, HF_PCIE_TLP_CPL_ID, tvb, offset, 2, ENC_BIG_ENDIAN);
+    proto_tree * cpl_id_tree = proto_item_add_subtree(cpl_id_item, ETT_PCIE_TLP_CPL_ID);
+    proto_tree_add_item_ret_uint(cpl_id_tree, HF_PCIE_TLP_CPL_BUS, tvb, offset, 2, ENC_BIG_ENDIAN, &cpl_bdf->bus);
+    proto_tree_add_item_ret_uint(cpl_id_tree, HF_PCIE_TLP_CPL_DEV, tvb, offset, 2, ENC_BIG_ENDIAN, &cpl_bdf->dev);
+    proto_tree_add_item_ret_uint(cpl_id_tree, HF_PCIE_TLP_CPL_FUN, tvb, offset, 2, ENC_BIG_ENDIAN, &cpl_bdf->fun);
+}
+
 static void dissect_tlp_req_id_and_tag70(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70) {
     tlp_bdf_t req_bdf = {0};
     dissect_tlp_req_id(tree, tvb, 4, req_id, &req_bdf);
@@ -1317,17 +1325,11 @@ static void dissect_tlp_io_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tr
 static void dissect_tlp_cfg_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70) {
     dissect_tlp_req_header(tvb, pinfo, tree, data, req_id, tag70);
 
-    proto_item * cpl_id_item = proto_tree_add_item(tree, HF_PCIE_TLP_CPL_ID, tvb, 8, 2, ENC_BIG_ENDIAN);
-    proto_tree * cpl_id_tree = proto_item_add_subtree(cpl_id_item, ETT_PCIE_TLP_CPL_ID);
-    uint32_t cpl_bus = 0;
-    proto_tree_add_item_ret_uint(cpl_id_tree, HF_PCIE_TLP_CPL_BUS, tvb, 8, 2, ENC_BIG_ENDIAN, &cpl_bus);
-    uint32_t cpl_dev = 0;
-    proto_tree_add_item_ret_uint(cpl_id_tree, HF_PCIE_TLP_CPL_DEV, tvb, 8, 2, ENC_BIG_ENDIAN, &cpl_dev);
-    uint32_t cpl_fun = 0;
-    proto_tree_add_item_ret_uint(cpl_id_tree, HF_PCIE_TLP_CPL_FUN, tvb, 8, 2, ENC_BIG_ENDIAN, &cpl_fun);
+    tlp_bdf_t cpl_bdf = {0};
+    dissect_tlp_cpl_id(tree, tvb, 8, &cpl_bdf);
 
     col_clear(pinfo->cinfo, COL_DEF_DST);
-    col_add_fstr(pinfo->cinfo, COL_DEF_DST, "%02x:%02x.%x", cpl_bus, cpl_dev, cpl_fun);
+    col_add_fstr(pinfo->cinfo, COL_DEF_DST, "%02x:%02x.%x", cpl_bdf.bus, cpl_bdf.dev, cpl_bdf.fun);
 
     uint32_t reg_num = 0;
     proto_tree_add_item_ret_uint(tree, HF_PCIE_TLP_REG, tvb, 10, 2, ENC_BIG_ENDIAN, &reg_num);
@@ -1342,17 +1344,11 @@ static void dissect_tlp_msg_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *t
 }
 
 static void dissect_tlp_cpl(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70) {
-    proto_item * cpl_id_item = proto_tree_add_item(tree, HF_PCIE_TLP_CPL_ID, tvb, 4, 2, ENC_BIG_ENDIAN);
-    proto_tree * cpl_id_tree = proto_item_add_subtree(cpl_id_item, ETT_PCIE_TLP_CPL_ID);
-    uint32_t cpl_bus = 0;
-    proto_tree_add_item_ret_uint(cpl_id_tree, HF_PCIE_TLP_CPL_BUS, tvb, 4, 2, ENC_BIG_ENDIAN, &cpl_bus);
-    uint32_t cpl_dev = 0;
-    proto_tree_add_item_ret_uint(cpl_id_tree, HF_PCIE_TLP_CPL_DEV, tvb, 4, 2, ENC_BIG_ENDIAN, &cpl_dev);
-    uint32_t cpl_fun = 0;
-    proto_tree_add_item_ret_uint(cpl_id_tree, HF_PCIE_TLP_CPL_FUN, tvb, 4, 2, ENC_BIG_ENDIAN, &cpl_fun);
+    tlp_bdf_t cpl_bdf = {0};
+    dissect_tlp_cpl_id(tree, tvb, 4, &cpl_bdf);
 
     col_clear(pinfo->cinfo, COL_DEF_SRC);
-    col_add_fstr(pinfo->cinfo, COL_DEF_SRC, "%02x:%02x.%x", cpl_bus, cpl_dev, cpl_fun);
+    col_add_fstr(pinfo->cinfo, COL_DEF_SRC, "%02x:%02x.%x", cpl_bdf.bus, cpl_bdf.dev, cpl_bdf.fun);
 
     uint32_t status = 0;
     proto_tree_add_item_ret_uint(tree, HF_PCIE_TLP_CPL_STATUS, tvb, 6, 2, ENC_BIG_ENDIAN, &status);
