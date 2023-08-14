@@ -123,20 +123,28 @@ fn main() {
             prev_timestamp_ns = Some(record.timestamp_ns);
         }
 
-        data_reader
-            .seek_relative(
-                <u64 as TryInto<i64>>::try_into(record.data_offset).unwrap() - current_offset,
-            )
-            .unwrap();
-        let data_read_len = if record.data_valid {
-            record.data_valid_count.into()
-        } else {
-            record.data_len.try_into().unwrap()
+        let data = {
+            data_reader
+                .seek_relative(
+                    <u64 as TryInto<i64>>::try_into(record.data_offset).unwrap() - current_offset,
+                )
+                .unwrap();
+
+            let data_read_len = if record.data_valid {
+                record.data_valid_count.into()
+            } else {
+                record.data_len.try_into().unwrap()
+            };
+
+            let mut buf: Vec<u8> = vec![0; data_read_len];
+
+            data_reader.read_exact(buf.as_mut_slice()).unwrap();
+
+            current_offset = <u64 as TryInto<i64>>::try_into(record.data_offset).unwrap()
+                + <usize as TryInto<i64>>::try_into(buf.len()).unwrap();
+
+            buf
         };
-        let mut data: Vec<u8> = vec![0; data_read_len];
-        data_reader.read_exact(data.as_mut_slice()).unwrap();
-        current_offset = <u64 as TryInto<i64>>::try_into(record.data_offset).unwrap()
-            + <usize as TryInto<i64>>::try_into(data.len()).unwrap();
 
         let record_data = {
             let mut ret = String::with_capacity(2 + 2 * data.len());
