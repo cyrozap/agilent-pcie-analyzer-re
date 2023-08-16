@@ -144,72 +144,74 @@ pub struct PadHeader {
     pub start: String,
 }
 
-pub fn parse_header(pad_file: &mut File) -> Option<PadHeader> {
-    let mut pad_reader = BufReader::new(pad_file);
-    let mut buffer: Vec<u8> = vec![0; 0];
-    let mut expand: usize = 0;
-    loop {
-        buffer.resize_with(buffer.len() + expand, Default::default);
-        pad_reader.read_exact(buffer.as_mut_slice()).unwrap();
-        //println!("bytes read: {}", bytes_read);
-        match tuple((
-            count(parse_string, 5),
-            count(be_u32, 2),
-            be_u32,
-            be_u32,
-            be_u32,
-            be_u32,
-            be_u32,
-            be_u32,
-            be_u64,
-            be_u64,
-            be_u64,
-            be_u64,
-            parse_string,
-            count(parse_string, 2),
-            count(be_u16, 6),
-            be_u64,
-            be_u64,
-            parse_string,
-        ))(buffer.as_slice())
-        {
-            Ok((_, o)) => {
-                return Some(PadHeader {
-                    module_type: String::from_utf8_lossy(o.0[0]).into(),
-                    port_id: String::from_utf8_lossy(o.0[1]).into(),
-                    rx_or_tx: String::from_utf8_lossy(o.0[2]).into(),
-                    description: String::from_utf8_lossy(o.0[3]).into(),
-                    format_code: String::from_utf8_lossy(o.0[4]).into(),
-                    numbers0: o.1,
-                    trigger_record_number: o.2,
-                    three: o.3,
-                    first_record_number: o.4,
-                    last_record_number: o.5,
-                    record_len: o.6,
-                    timestamp_array_size: o.7,
-                    timestamps_ns: TimestampsNs {
-                        first: o.8,
-                        last: o.9,
-                        stop: o.10,
-                        trigger: o.11,
-                    },
-                    guid: String::from_utf8_lossy(o.12).into(),
-                    channel_names: ChannelNames {
-                        a: String::from_utf8_lossy(o.13[0]).into(),
-                        b: String::from_utf8_lossy(o.13[1]).into(),
-                    },
-                    start_time: CoarseTimestamp::from_slice(&o.14[..3]),
-                    stop_time: CoarseTimestamp::from_slice(&o.14[3..]),
-                    records_offset: o.15,
-                    record_data_offset: o.16,
-                    start: String::from_utf8_lossy(o.17).into(),
-                })
+impl PadHeader {
+    pub fn from_file(pad_file: &mut File) -> Option<Self> {
+        let mut pad_reader = BufReader::new(pad_file);
+        let mut buffer: Vec<u8> = vec![0; 0];
+        let mut expand: usize = 0;
+        loop {
+            buffer.resize_with(buffer.len() + expand, Default::default);
+            pad_reader.read_exact(buffer.as_mut_slice()).unwrap();
+            //println!("bytes read: {}", bytes_read);
+            match tuple((
+                count(parse_string, 5),
+                count(be_u32, 2),
+                be_u32,
+                be_u32,
+                be_u32,
+                be_u32,
+                be_u32,
+                be_u32,
+                be_u64,
+                be_u64,
+                be_u64,
+                be_u64,
+                parse_string,
+                count(parse_string, 2),
+                count(be_u16, 6),
+                be_u64,
+                be_u64,
+                parse_string,
+            ))(buffer.as_slice())
+            {
+                Ok((_, o)) => {
+                    return Some(Self {
+                        module_type: String::from_utf8_lossy(o.0[0]).into(),
+                        port_id: String::from_utf8_lossy(o.0[1]).into(),
+                        rx_or_tx: String::from_utf8_lossy(o.0[2]).into(),
+                        description: String::from_utf8_lossy(o.0[3]).into(),
+                        format_code: String::from_utf8_lossy(o.0[4]).into(),
+                        numbers0: o.1,
+                        trigger_record_number: o.2,
+                        three: o.3,
+                        first_record_number: o.4,
+                        last_record_number: o.5,
+                        record_len: o.6,
+                        timestamp_array_size: o.7,
+                        timestamps_ns: TimestampsNs {
+                            first: o.8,
+                            last: o.9,
+                            stop: o.10,
+                            trigger: o.11,
+                        },
+                        guid: String::from_utf8_lossy(o.12).into(),
+                        channel_names: ChannelNames {
+                            a: String::from_utf8_lossy(o.13[0]).into(),
+                            b: String::from_utf8_lossy(o.13[1]).into(),
+                        },
+                        start_time: CoarseTimestamp::from_slice(&o.14[..3]),
+                        stop_time: CoarseTimestamp::from_slice(&o.14[3..]),
+                        records_offset: o.15,
+                        record_data_offset: o.16,
+                        start: String::from_utf8_lossy(o.17).into(),
+                    })
+                }
+                Err(nom::Err::Incomplete(nom::Needed::Size(n))) => expand = n.get(),
+                _ => return None,
             }
-            Err(nom::Err::Incomplete(nom::Needed::Size(n))) => expand = n.get(),
-            _ => return None,
+            pad_reader
+                .seek_relative(-(<usize as TryInto<i64>>::try_into(buffer.len()).unwrap()))
+                .unwrap();
         }
-        pad_reader
-            .seek_relative(-(<usize as TryInto<i64>>::try_into(buffer.len()).unwrap()))
-            .unwrap();
     }
 }

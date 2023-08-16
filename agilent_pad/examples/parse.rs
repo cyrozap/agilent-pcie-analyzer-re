@@ -78,7 +78,7 @@ fn main() {
         }
     };
 
-    let header = parse_header(&mut pad_file).unwrap();
+    let header = PadHeader::from_file(&mut pad_file).unwrap();
     println!("{:?}", header);
 
     assert_eq!(header.record_len, 40, "record length mismatch");

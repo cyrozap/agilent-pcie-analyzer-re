@@ -63,7 +63,7 @@ fn main() {
         }
     };
 
-    let header = parse_header(&mut pad_file).unwrap();
+    let header = PadHeader::from_file(&mut pad_file).unwrap();
     println!("{:?}", header);
 
     pad_file
