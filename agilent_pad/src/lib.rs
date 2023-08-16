@@ -32,6 +32,14 @@ fn u32_hi_lo_to_u64(hi: u32, lo: u32) -> u64 {
     (<u32 as Into<u64>>::into(hi).checked_shl(32).unwrap()) | <u32 as Into<u64>>::into(lo)
 }
 
+fn le_u32_typed(input: &[u8]) -> IResult<&[u8], u32> {
+    le_u32(input)
+}
+
+fn parse_string(input: &[u8]) -> IResult<&[u8], &[u8]> {
+    length_data(be_u16)(input)
+}
+
 #[derive(Debug)]
 pub struct Record {
     pub number: u32,
@@ -43,10 +51,6 @@ pub struct Record {
     pub data_valid_count: u16,
     pub flags: u32,
     pub data_offset: u64,
-}
-
-fn le_u32_typed(input: &[u8]) -> IResult<&[u8], u32> {
-    le_u32(input)
 }
 
 impl Record {
@@ -138,10 +142,6 @@ pub struct PadHeader {
     pub records_offset: u64,
     pub record_data_offset: u64,
     pub start: String,
-}
-
-fn parse_string(input: &[u8]) -> IResult<&[u8], &[u8]> {
-    length_data(be_u16)(input)
 }
 
 pub fn parse_header(pad_file: &mut File) -> Option<PadHeader> {
