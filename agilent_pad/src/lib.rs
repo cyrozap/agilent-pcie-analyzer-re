@@ -140,7 +140,7 @@ pub struct PadHeader {
     pub start: String,
 }
 
-pub fn parse_string(input: &[u8]) -> IResult<&[u8], &[u8]> {
+fn parse_string(input: &[u8]) -> IResult<&[u8], &[u8]> {
     length_data(be_u16)(input)
 }
 
