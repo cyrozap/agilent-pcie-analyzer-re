@@ -145,8 +145,10 @@ pub struct PadHeader {
 }
 
 impl PadHeader {
-    pub fn from_file(pad_file: &mut File) -> Option<Self> {
-        let mut pad_reader = BufReader::new(pad_file);
+    pub fn from_bufreader<R>(pad_reader: &mut BufReader<R>) -> Option<Self>
+    where
+        R: Read + Seek,
+    {
         let mut buffer: Vec<u8> = vec![0; 0];
         let mut expand: usize = 0;
         loop {
@@ -213,5 +215,11 @@ impl PadHeader {
                 .seek_relative(-(<usize as TryInto<i64>>::try_into(buffer.len()).unwrap()))
                 .unwrap();
         }
+    }
+
+    pub fn from_file(pad_file: &mut File) -> Option<Self> {
+        let mut pad_reader = BufReader::new(pad_file);
+
+        Self::from_bufreader(&mut pad_reader)
     }
 }
