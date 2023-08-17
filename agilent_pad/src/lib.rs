@@ -233,17 +233,17 @@ pub struct PadFile {
 
 impl PadFile {
     pub fn from_filename(filename: &str) -> Result<Self, std::io::Error> {
-        let mut pad_file = match File::open(filename) {
-            Ok(f) => f,
+        let mut pad_reader = match File::open(filename) {
+            Ok(f) => BufReader::new(f),
             Err(e) => return Err(e),
         };
 
-        let mut pad_file_2 = match File::open(filename) {
-            Ok(f) => f,
+        let mut data_reader = match File::open(filename) {
+            Ok(f) => BufReader::new(f),
             Err(e) => return Err(e),
         };
 
-        let header = PadHeader::from_file(&mut pad_file).unwrap();
+        let header = PadHeader::from_bufreader(&mut pad_reader).unwrap();
 
         assert_eq!(header.record_len, 40, "record length mismatch");
         assert_eq!(
@@ -251,15 +251,13 @@ impl PadFile {
             "timestamp array size mismatch"
         );
 
-        pad_file
+        pad_reader
             .seek(std::io::SeekFrom::Start(header.records_offset))
             .unwrap();
-        let pad_reader = BufReader::new(pad_file);
 
-        pad_file_2
+        data_reader
             .seek(std::io::SeekFrom::Start(header.record_data_offset))
             .unwrap();
-        let data_reader = BufReader::new(pad_file_2);
 
         Ok(Self {
             header,
