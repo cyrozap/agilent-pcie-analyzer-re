@@ -53,15 +53,13 @@ fn main() {
     let mut pad_reader = pad_file.pad_reader;
     let mut data_reader = pad_file.data_reader;
 
-    let pcapng_file = match File::create(&args.pcapng_file) {
-        Ok(f) => f,
+    let mut pcapng_writer = match File::create(&args.pcapng_file) {
+        Ok(f) => BufWriter::new(f),
         Err(error) => {
             eprintln!("Error opening file {:?}: {:?}", &args.pcapng_file, error);
             return;
         }
     };
-
-    let mut pcapng_writer = BufWriter::new(pcapng_file);
 
     // Section Header Block
     {
