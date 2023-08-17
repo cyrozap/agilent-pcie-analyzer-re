@@ -50,7 +50,6 @@ fn main() {
     let header = pad_file.header;
     println!("{:?}", header);
 
-    let mut pad_reader = pad_file.pad_reader;
     let mut data_reader = pad_file.data_reader;
 
     let mut pcapng_writer = match File::create(&args.pcapng_file) {
@@ -147,18 +146,7 @@ fn main() {
     }
 
     let mut current_offset: i64 = 0;
-    for record_number in header.first_record_number..=header.last_record_number {
-        let mut record_buffer = [0; 40];
-        pad_reader.read_exact(&mut record_buffer).unwrap();
-        if record_buffer.iter().all(|b| *b == 0) {
-            println!("Encountered empty record, exiting...");
-            break;
-        }
-
-        let record = Record::from_slice(&record_buffer).unwrap();
-
-        assert_eq!(record.number, record_number, "record number mismatch");
-
+    for record in pad_file.records {
         assert_eq!(record.count, 1, "record \"count\" field is not equal to 1");
 
         let mut record_data: Vec<u8> = {

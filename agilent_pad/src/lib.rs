@@ -225,9 +225,54 @@ impl PadHeader {
 }
 
 #[derive(Debug)]
+pub struct Records {
+    curr: u32,
+    last: u32,
+    reader: BufReader<File>,
+}
+
+impl Records {
+    fn new(first: u32, last: u32, reader: BufReader<File>) -> Self {
+        Self {
+            curr: first,
+            last,
+            reader,
+        }
+    }
+}
+
+impl Iterator for Records {
+    type Item = Record;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.curr > self.last {
+            return None;
+        }
+
+        let mut record_buffer = [0; 40];
+
+        self.reader.read_exact(&mut record_buffer).unwrap();
+
+        /* Handle null record */
+        if record_buffer.iter().all(|b| *b == 0) {
+            self.curr = self.last + 1;
+            return None;
+        }
+
+        let record = Record::from_slice(&record_buffer).unwrap();
+
+        assert_eq!(record.number, self.curr, "record number mismatch");
+
+        self.curr += 1;
+
+        Some(record)
+    }
+}
+
+#[derive(Debug)]
 pub struct PadFile {
     pub header: PadHeader,
-    pub pad_reader: BufReader<File>,
+    pub records: Records,
     pub data_reader: BufReader<File>,
 }
 
@@ -259,9 +304,12 @@ impl PadFile {
             .seek(std::io::SeekFrom::Start(header.record_data_offset))
             .unwrap();
 
+        let first = header.first_record_number;
+        let last = header.last_record_number;
+
         Ok(Self {
             header,
-            pad_reader,
+            records: Records::new(first, last, pad_reader),
             data_reader,
         })
     }
