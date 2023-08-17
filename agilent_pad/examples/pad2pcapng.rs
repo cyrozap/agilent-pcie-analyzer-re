@@ -39,7 +39,7 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
-    let pad_file = match PadFile::from_filename(&args.pad_file) {
+    let mut pad_file = match PadFile::from_filename(&args.pad_file) {
         Ok(pf) => pf,
         Err(error) => {
             eprintln!("Error opening file {:?}: {:?}", &args.pad_file, error);
@@ -49,8 +49,6 @@ fn main() {
 
     let header = pad_file.header;
     println!("{:?}", header);
-
-    let mut data_reader = pad_file.data_reader;
 
     let mut pcapng_writer = match File::create(&args.pcapng_file) {
         Ok(f) => BufWriter::new(f),
@@ -145,23 +143,10 @@ fn main() {
         pcapng_writer.write_all(&if_len.to_le_bytes()).unwrap();
     }
 
-    let mut current_offset: i64 = 0;
     for record in pad_file.records {
         assert_eq!(record.count, 1, "record \"count\" field is not equal to 1");
 
-        let mut record_data: Vec<u8> = {
-            data_reader
-                .seek_relative(
-                    <u64 as TryInto<i64>>::try_into(record.data_offset).unwrap() - current_offset,
-                )
-                .unwrap();
-            let mut data = vec![0; record.data_len.try_into().unwrap()];
-            data_reader.read_exact(data.as_mut_slice()).unwrap();
-            current_offset = <u64 as TryInto<i64>>::try_into(record.data_offset).unwrap()
-                + <usize as TryInto<i64>>::try_into(data.len()).unwrap();
-
-            data
-        };
+        let mut record_data = pad_file.record_reader.get_all_data_for_record(&record);
 
         // Enhanced Packet Block
         {

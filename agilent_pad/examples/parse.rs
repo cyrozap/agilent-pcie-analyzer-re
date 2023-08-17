@@ -18,8 +18,6 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::io::prelude::*;
-
 use clap::Parser;
 
 use agilent_pad::*;
@@ -60,7 +58,7 @@ fn char_for_nybble(value: u8) -> char {
 fn main() {
     let args = Args::parse();
 
-    let pad_file = match PadFile::from_filename(&args.pad_file) {
+    let mut pad_file = match PadFile::from_filename(&args.pad_file) {
         Ok(pf) => pf,
         Err(error) => {
             eprintln!("Error opening file {:?}: {:?}", &args.pad_file, error);
@@ -71,10 +69,7 @@ fn main() {
     let header = pad_file.header;
     println!("{:?}", header);
 
-    let mut data_reader = pad_file.data_reader;
-
     let mut prev_timestamp_ns = None;
-    let mut current_offset: i64 = 0;
     for record in pad_file.records {
         let us_ds = match get_bit(record.flags, 28) {
             true => "US",
@@ -88,28 +83,7 @@ fn main() {
             prev_timestamp_ns = Some(record.timestamp_ns);
         }
 
-        let data = {
-            data_reader
-                .seek_relative(
-                    <u64 as TryInto<i64>>::try_into(record.data_offset).unwrap() - current_offset,
-                )
-                .unwrap();
-
-            let data_read_len = if record.data_valid {
-                record.data_valid_count.into()
-            } else {
-                record.data_len.try_into().unwrap()
-            };
-
-            let mut buf: Vec<u8> = vec![0; data_read_len];
-
-            data_reader.read_exact(buf.as_mut_slice()).unwrap();
-
-            current_offset = <u64 as TryInto<i64>>::try_into(record.data_offset).unwrap()
-                + <usize as TryInto<i64>>::try_into(buf.len()).unwrap();
-
-            buf
-        };
+        let data = pad_file.record_reader.get_valid_data_for_record(&record);
 
         let record_data = {
             let mut ret = String::with_capacity(2 + 2 * data.len());

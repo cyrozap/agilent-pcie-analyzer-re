@@ -270,10 +270,50 @@ impl Iterator for Records {
 }
 
 #[derive(Debug)]
+pub struct RecordReader {
+    data_reader: BufReader<File>,
+    curr_data_offset: i64,
+}
+
+impl RecordReader {
+    fn get_data_for_record(&mut self, record: &Record, valid_only: bool) -> Vec<u8> {
+        self.data_reader
+            .seek_relative(
+                <u64 as TryInto<i64>>::try_into(record.data_offset).unwrap()
+                    - self.curr_data_offset,
+            )
+            .unwrap();
+
+        let data_read_len = if valid_only && record.data_valid {
+            record.data_valid_count.into()
+        } else {
+            record.data_len.try_into().unwrap()
+        };
+
+        let mut buf: Vec<u8> = vec![0; data_read_len];
+
+        self.data_reader.read_exact(buf.as_mut_slice()).unwrap();
+
+        self.curr_data_offset = <u64 as TryInto<i64>>::try_into(record.data_offset).unwrap()
+            + <usize as TryInto<i64>>::try_into(buf.len()).unwrap();
+
+        buf
+    }
+
+    pub fn get_valid_data_for_record(&mut self, record: &Record) -> Vec<u8> {
+        self.get_data_for_record(record, true)
+    }
+
+    pub fn get_all_data_for_record(&mut self, record: &Record) -> Vec<u8> {
+        self.get_data_for_record(record, false)
+    }
+}
+
+#[derive(Debug)]
 pub struct PadFile {
     pub header: PadHeader,
     pub records: Records,
-    pub data_reader: BufReader<File>,
+    pub record_reader: RecordReader,
 }
 
 impl PadFile {
@@ -310,7 +350,10 @@ impl PadFile {
         Ok(Self {
             header,
             records: Records::new(first, last, pad_reader),
-            data_reader,
+            record_reader: RecordReader {
+                data_reader,
+                curr_data_offset: 0,
+            },
         })
     }
 }
