@@ -66,8 +66,7 @@ fn main() {
         }
     };
 
-    let header = pad_file.header;
-    println!("{:?}", header);
+    println!("{:?}", pad_file.header);
 
     let mut prev_timestamp_ns = None;
     for record in pad_file.records {
