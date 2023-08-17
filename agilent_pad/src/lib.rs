@@ -223,3 +223,48 @@ impl PadHeader {
         Self::from_bufreader(&mut pad_reader)
     }
 }
+
+#[derive(Debug)]
+pub struct PadFile {
+    pub header: PadHeader,
+    pub pad_reader: BufReader<File>,
+    pub data_reader: BufReader<File>,
+}
+
+impl PadFile {
+    pub fn from_filename(filename: &str) -> Result<Self, std::io::Error> {
+        let mut pad_file = match File::open(filename) {
+            Ok(f) => f,
+            Err(e) => return Err(e),
+        };
+
+        let mut pad_file_2 = match File::open(filename) {
+            Ok(f) => f,
+            Err(e) => return Err(e),
+        };
+
+        let header = PadHeader::from_file(&mut pad_file).unwrap();
+
+        assert_eq!(header.record_len, 40, "record length mismatch");
+        assert_eq!(
+            header.timestamp_array_size, 8,
+            "timestamp array size mismatch"
+        );
+
+        pad_file
+            .seek(std::io::SeekFrom::Start(header.records_offset))
+            .unwrap();
+        let pad_reader = BufReader::new(pad_file);
+
+        pad_file_2
+            .seek(std::io::SeekFrom::Start(header.record_data_offset))
+            .unwrap();
+        let data_reader = BufReader::new(pad_file_2);
+
+        Ok(Self {
+            header,
+            pad_reader,
+            data_reader,
+        })
+    }
+}

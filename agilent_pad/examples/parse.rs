@@ -18,9 +18,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::fs::File;
 use std::io::prelude::*;
-use std::io::BufReader;
 
 use clap::Parser;
 
@@ -62,40 +60,19 @@ fn char_for_nybble(value: u8) -> char {
 fn main() {
     let args = Args::parse();
 
-    let mut pad_file = match File::open(&args.pad_file) {
-        Ok(f) => f,
+    let pad_file = match PadFile::from_filename(&args.pad_file) {
+        Ok(pf) => pf,
         Err(error) => {
             eprintln!("Error opening file {:?}: {:?}", &args.pad_file, error);
             return;
         }
     };
 
-    let mut pad_file_2 = match File::open(&args.pad_file) {
-        Ok(f) => f,
-        Err(error) => {
-            eprintln!("Error opening file {:?}: {:?}", &args.pad_file, error);
-            return;
-        }
-    };
-
-    let header = PadHeader::from_file(&mut pad_file).unwrap();
+    let header = pad_file.header;
     println!("{:?}", header);
 
-    assert_eq!(header.record_len, 40, "record length mismatch");
-    assert_eq!(
-        header.timestamp_array_size, 8,
-        "timestamp array size mismatch"
-    );
-
-    pad_file
-        .seek(std::io::SeekFrom::Start(header.records_offset))
-        .unwrap();
-    let mut pad_reader = BufReader::new(pad_file);
-
-    pad_file_2
-        .seek(std::io::SeekFrom::Start(header.record_data_offset))
-        .unwrap();
-    let mut data_reader = BufReader::new(pad_file_2);
+    let mut pad_reader = pad_file.pad_reader;
+    let mut data_reader = pad_file.data_reader;
 
     let mut prev_timestamp_ns = None;
     let mut current_offset: i64 = 0;

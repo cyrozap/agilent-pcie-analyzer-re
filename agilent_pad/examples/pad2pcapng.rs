@@ -20,7 +20,7 @@
 
 use std::fs::File;
 use std::io::prelude::*;
-use std::io::{BufReader, BufWriter};
+use std::io::BufWriter;
 
 use clap::Parser;
 
@@ -39,21 +39,19 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
-    let mut pad_file = match File::open(&args.pad_file) {
-        Ok(f) => f,
+    let pad_file = match PadFile::from_filename(&args.pad_file) {
+        Ok(pf) => pf,
         Err(error) => {
             eprintln!("Error opening file {:?}: {:?}", &args.pad_file, error);
             return;
         }
     };
 
-    let mut pad_file_2 = match File::open(&args.pad_file) {
-        Ok(f) => f,
-        Err(error) => {
-            eprintln!("Error opening file {:?}: {:?}", &args.pad_file, error);
-            return;
-        }
-    };
+    let header = pad_file.header;
+    println!("{:?}", header);
+
+    let mut pad_reader = pad_file.pad_reader;
+    let mut data_reader = pad_file.data_reader;
 
     let pcapng_file = match File::create(&args.pcapng_file) {
         Ok(f) => f,
@@ -62,19 +60,6 @@ fn main() {
             return;
         }
     };
-
-    let header = PadHeader::from_file(&mut pad_file).unwrap();
-    println!("{:?}", header);
-
-    pad_file
-        .seek(std::io::SeekFrom::Start(header.records_offset))
-        .unwrap();
-    let mut pad_reader = BufReader::new(pad_file);
-
-    pad_file_2
-        .seek(std::io::SeekFrom::Start(header.record_data_offset))
-        .unwrap();
-    let mut data_reader = BufReader::new(pad_file_2);
 
     let mut pcapng_writer = BufWriter::new(pcapng_file);
 
