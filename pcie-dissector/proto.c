@@ -451,6 +451,7 @@ static int HF_PCIE_TLP_CPL_BCM = -1;
 static int HF_PCIE_TLP_CPL_BYTE_COUNT = -1;
 static int HF_PCIE_TLP_CPL_LOWER_ADDR = -1;
 static int HF_PCIE_TLP_PAYLOAD = -1;
+static int HF_PCIE_TLP_PAYLOAD_DW = -1;
 static int HF_PCIE_TLP_ECRC = -1;
 static int HF_PCIE_TLP_COMPLETION_IN = -1;
 static int HF_PCIE_TLP_REQUEST_IN = -1;
@@ -802,6 +803,12 @@ static hf_register_info HF_PCIE_TLP[] = {
         NULL, 0x0,
         NULL, HFILL }
     },
+    { &HF_PCIE_TLP_PAYLOAD_DW,
+        { "Payload DW", "pcie.tlp.payload.dw",
+        FT_UINT32, BASE_HEX,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
     { &HF_PCIE_TLP_ECRC,
         { "End-to-end CRC", "pcie.tlp.ecrc",
         FT_UINT32, BASE_HEX,
@@ -839,6 +846,7 @@ static int ETT_PCIE_TLP_CPL_ID = -1;
 static int ETT_PCIE_TLP_CPL_STATUS_BCM_BYTE_COUNT = -1;
 static int ETT_PCIE_TLP_LAST_FIRST_DW_BE = -1;
 static int ETT_PCIE_TLP_ADDR_PH = -1;
+static int ETT_PCIE_TLP_PAYLOAD = -1;
 static int * const ETT[] = {
         &ETT_PCIE,
         &ETT_PCIE_FRAME,
@@ -851,6 +859,7 @@ static int * const ETT[] = {
         &ETT_PCIE_TLP_CPL_STATUS_BCM_BYTE_COUNT,
         &ETT_PCIE_TLP_LAST_FIRST_DW_BE,
         &ETT_PCIE_TLP_ADDR_PH,
+        &ETT_PCIE_TLP_PAYLOAD,
 };
 
 static expert_field EI_PCIE_FRAME_LCRC_INVALID = EI_INIT;
@@ -1214,7 +1223,12 @@ static int dissect_pcie_tlp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree,
     int header_dw_count = 3 + (tlp_fmt & 0b001);
 
     if (has_payload) {
-        proto_tree_add_item(tlp_tree, HF_PCIE_TLP_PAYLOAD, tvb, 4*header_dw_count, 4*payload_len, ENC_LITTLE_ENDIAN);
+        proto_item * payload_tree_item = proto_tree_add_item(tlp_tree, HF_PCIE_TLP_PAYLOAD, tvb, 4*header_dw_count, 4*payload_len, ENC_NA);
+        proto_tree * payload_tree = proto_item_add_subtree(payload_tree_item, ETT_PCIE_TLP_PAYLOAD);
+
+        for (size_t i = 0; i < payload_len; i++) {
+            proto_tree_add_item(payload_tree, HF_PCIE_TLP_PAYLOAD_DW, tvb, 4*(header_dw_count + i), 4, ENC_LITTLE_ENDIAN);
+        }
 
         if (payload_len == 1) {
             col_append_fstr(pinfo->cinfo, COL_INFO, ": 0x%08x", tvb_get_letohl(tvb, 4*header_dw_count));
