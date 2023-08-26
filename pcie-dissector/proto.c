@@ -384,6 +384,7 @@ static const value_string TLP_MSG_CODES[] = {
 };
 
 static dissector_handle_t PCIE_HANDLE = NULL;
+static dissector_handle_t PCIE_TLP_HANDLE = NULL;
 
 static int PROTO_PCIE = -1;
 static int PROTO_PCIE_FRAME = -1;
@@ -886,7 +887,7 @@ static ei_register_info EI_PCIE_TLP[] = {
 
 static void dissect_pcie_frame_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, gboolean direction);
 static void dissect_pcie_dllp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data);
-static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data);
+static int dissect_pcie_tlp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data);
 static void dissect_tlp_mem_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70, bool addr64);
 static void dissect_tlp_io_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70);
 static void dissect_tlp_cfg_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70);
@@ -1021,7 +1022,7 @@ static void dissect_pcie_frame_internal(tvbuff_t *tvb, packet_info *pinfo, proto
 
             // Dissect the TLP.
             tvbuff_t * tlp_tvb = tvb_new_subset_length(tvb, tlp_offset, tlp_len);
-            dissect_pcie_tlp_internal(tlp_tvb, pinfo, tree, data);
+            call_dissector(PCIE_TLP_HANDLE, tlp_tvb, pinfo, tree);
 
             uint32_t lcrc = 0;
             proto_item * lcrc_item = proto_tree_add_item_ret_uint(frame_tree, HF_PCIE_FRAME_TLP_LCRC, tvb, tlp_offset+tlp_len, 4, ENC_LITTLE_ENDIAN, &lcrc);
@@ -1058,7 +1059,7 @@ static void dissect_pcie_dllp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_
     }
 }
 
-static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data) {
+static int dissect_pcie_tlp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data) {
     uint32_t tlp_len = tvb_reported_length(tvb);
     proto_item * tlp_tree_item = proto_tree_add_item(tree, PROTO_PCIE_TLP, tvb, 0, tlp_len, ENC_NA);
     proto_tree * tlp_tree = proto_item_add_subtree(tlp_tree_item, ETT_PCIE_TLP);
@@ -1077,7 +1078,7 @@ static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_t
 
     if (tlp_fmt >= 0b100) {
         // TODO: Add support for TLP Prefixes.
-        return;
+        return tvb_captured_length(tvb);
     }
 
     uint32_t tlp_type = 0;
@@ -1163,7 +1164,7 @@ static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_t
                 dissect_tlp_msg_req(tvb, pinfo, tlp_tree, data, &req_id, &tag70);
                 break;
             }
-            return;
+            return tvb_captured_length(tvb);
     }
 
     uint32_t tlp_tag = (tag9 << 9) | (tag8 << 8) | tag70;
@@ -1258,6 +1259,8 @@ static void dissect_pcie_tlp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_t
             }
         }
     }
+
+    return tvb_captured_length(tvb);
 }
 
 static void dissect_tlp_req_id(proto_tree *tree, tvbuff_t *tvb, int offset, uint32_t *req_id, tlp_bdf_t *req_bdf) {
@@ -1458,6 +1461,8 @@ static void proto_register_pcie_tlp() {
 
     expert_module_t * expert = expert_register_protocol(PROTO_PCIE_TLP);
     expert_register_field_array(expert, EI_PCIE_TLP, array_length(EI_PCIE_TLP));
+
+    PCIE_TLP_HANDLE = register_dissector("pcie.tlp", dissect_pcie_tlp, PROTO_PCIE_TLP);
 }
 
 void proto_register_pcie() {
