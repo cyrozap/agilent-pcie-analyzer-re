@@ -894,6 +894,16 @@ static void dissect_tlp_cfg_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *t
 static void dissect_tlp_msg_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70);
 static void dissect_tlp_cpl(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70);
 
+static uint32_t extract_length_from_tlp_dw0(uint32_t tlp_dw0) {
+    uint32_t length = tlp_dw0 & ((1 << 10) - 1);
+
+    if (length == 0) {
+        length = 1 << 10;
+    }
+
+    return length;
+}
+
 static bool is_posted_request(uint32_t fmt_type) {
     /* Memory Write */
     if ((fmt_type & 0b11011111) == 0b01000000)
@@ -1009,10 +1019,7 @@ static void dissect_pcie_frame_internal(tvbuff_t *tvb, packet_info *pinfo, proto
             }
             uint32_t payload_dw_count = 0;
             if (tlp_fmt & 0b010) {
-                payload_dw_count = tlp_dw0 & ((1 << 10) - 1);
-                if (payload_dw_count == 0) {
-                    payload_dw_count = 1 << 10;
-                }
+                payload_dw_count = extract_length_from_tlp_dw0(tlp_dw0);
             }
             uint32_t ecrc_dw_count = 0;
             if (tlp_dw0 & (1 << 15)) {
