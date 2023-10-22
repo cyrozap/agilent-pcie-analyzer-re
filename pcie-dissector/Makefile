@@ -28,8 +28,11 @@ all: pcie.so
 pcie.so: plugin.o proto.o
 	$(CC) $(CFLAGS) $(LDFLAGS) -shared -o $@ $^
 
+install: pcie.so
+	install -Dm755 $< $(HOME)/.local/lib/wireshark/plugins/4.0/epan/$<
+
 clean:
 	rm -f *.o *.so
 
 
-.PHONY: all clean
+.PHONY: all clean install

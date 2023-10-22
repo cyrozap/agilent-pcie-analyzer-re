@@ -6,8 +6,8 @@ to PCAP-NG format by [pad2pcapng][pad2pcapng].
 
 ## How to use
 
-1. `make`
-2. `cp pcie.so ~/.local/lib/wireshark/plugins/4.0/epan/`
+1. Build the plugin by running `make`.
+2. Install the plugin for the current user by running `make install`.
 3. Start Wireshark and open a PCAP-NG format PCIe capture file.
 
 
