@@ -384,6 +384,7 @@ static const value_string TLP_MSG_CODES[] = {
 };
 
 static dissector_handle_t PCIE_HANDLE = NULL;
+static dissector_handle_t PCIE_FRAME_HANDLE = NULL;
 static dissector_handle_t PCIE_DLLP_HANDLE = NULL;
 static dissector_handle_t PCIE_TLP_HANDLE = NULL;
 
@@ -895,7 +896,7 @@ static ei_register_info EI_PCIE_TLP[] = {
     },
 };
 
-static void dissect_pcie_frame_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, gboolean direction);
+static int dissect_pcie_frame(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data);
 static int dissect_pcie_dllp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data);
 static int dissect_pcie_tlp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data);
 static void dissect_tlp_mem_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70, bool addr64);
@@ -997,12 +998,12 @@ static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
     } else {
         frame_tvb = tvb_new_subset_remaining(tvb, PCIE_CAPTURE_HEADER_SIZE);
     }
-    dissect_pcie_frame_internal(frame_tvb, pinfo, tree, data, direction);
+    call_dissector(PCIE_FRAME_HANDLE, frame_tvb, pinfo, tree);
 
     return tvb_captured_length(tvb);
 }
 
-static void dissect_pcie_frame_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, gboolean direction) {
+static int dissect_pcie_frame(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data) {
     uint32_t frame_len = tvb_reported_length(tvb);
 
     proto_item * frame_tree_item = proto_tree_add_item(tree, PROTO_PCIE_FRAME, tvb, 0, frame_len, ENC_NA);
@@ -1061,6 +1062,8 @@ static void dissect_pcie_frame_internal(tvbuff_t *tvb, packet_info *pinfo, proto
         default:
             break;
     }
+
+    return tvb_captured_length(tvb);
 }
 
 static int dissect_pcie_dllp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data) {
@@ -1459,6 +1462,8 @@ static void proto_register_pcie_frame() {
 
     expert_module_t * expert = expert_register_protocol(PROTO_PCIE_FRAME);
     expert_register_field_array(expert, EI_PCIE_FRAME, array_length(EI_PCIE_FRAME));
+
+    PCIE_FRAME_HANDLE = register_dissector("pcie.frame", dissect_pcie_frame, PROTO_PCIE_FRAME);
 }
 
 static void proto_register_pcie_dllp() {
