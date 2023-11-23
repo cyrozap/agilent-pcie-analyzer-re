@@ -384,6 +384,7 @@ static const value_string TLP_MSG_CODES[] = {
 };
 
 static dissector_handle_t PCIE_HANDLE = NULL;
+static dissector_handle_t PCIE_DLLP_HANDLE = NULL;
 static dissector_handle_t PCIE_TLP_HANDLE = NULL;
 
 static int PROTO_PCIE = -1;
@@ -895,7 +896,7 @@ static ei_register_info EI_PCIE_TLP[] = {
 };
 
 static void dissect_pcie_frame_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, gboolean direction);
-static void dissect_pcie_dllp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data);
+static int dissect_pcie_dllp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data);
 static int dissect_pcie_tlp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data);
 static void dissect_tlp_mem_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70, bool addr64);
 static void dissect_tlp_io_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70);
@@ -1054,7 +1055,7 @@ static void dissect_pcie_frame_internal(tvbuff_t *tvb, packet_info *pinfo, proto
         case K_28_2:
             col_set_str(pinfo->cinfo, COL_PROTOCOL, "PCIe DLLP");
             tvbuff_t * dllp_tvb = tvb_new_subset_length(tvb, 1, 6);
-            dissect_pcie_dllp_internal(dllp_tvb, pinfo, tree, data);
+            call_dissector(PCIE_DLLP_HANDLE, dllp_tvb, pinfo, tree);
             proto_tree_add_item(frame_tree, HF_PCIE_FRAME_END_TAG, tvb, 7, 1, ENC_BIG_ENDIAN);
             break;
         default:
@@ -1062,7 +1063,7 @@ static void dissect_pcie_frame_internal(tvbuff_t *tvb, packet_info *pinfo, proto
     }
 }
 
-static void dissect_pcie_dllp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data) {
+static int dissect_pcie_dllp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data) {
     uint32_t dllp_len = tvb_reported_length(tvb);
     proto_item * dllp_tree_item = proto_tree_add_item(tree, PROTO_PCIE_DLLP, tvb, 0, dllp_len, ENC_NA);
     proto_tree * dllp_tree = proto_item_add_subtree(dllp_tree_item, ETT_PCIE_DLLP);
@@ -1073,6 +1074,8 @@ static void dissect_pcie_dllp_internal(tvbuff_t *tvb, packet_info *pinfo, proto_
     if (crc != dllp_crc16_tvb_offset(tvb, 0, 4)) {
         expert_add_info(pinfo, crc_item, &EI_PCIE_DLLP_CRC_INVALID);
     }
+
+    return tvb_captured_length(tvb);
 }
 
 static int dissect_pcie_tlp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data) {
@@ -1469,6 +1472,8 @@ static void proto_register_pcie_dllp() {
 
     expert_module_t * expert = expert_register_protocol(PROTO_PCIE_DLLP);
     expert_register_field_array(expert, EI_PCIE_DLLP, array_length(EI_PCIE_DLLP));
+
+    PCIE_DLLP_HANDLE = register_dissector("pcie.dllp", dissect_pcie_dllp, PROTO_PCIE_DLLP);
 }
 
 static void proto_register_pcie_tlp() {
