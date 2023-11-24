@@ -396,6 +396,7 @@ static int PROTO_PCIE_TLP = -1;
 static int HF_PCIE_RECORD = -1;
 static int HF_PCIE_TIMESTAMP_NS = -1;
 static int HF_PCIE_UNK = -1;
+static int HF_PCIE_DATA_COUNT = -1;
 static int HF_PCIE_DATA_VALID = -1;
 static int HF_PCIE_DATA_VALID_COUNT = -1;
 static int HF_PCIE_SYMBOL_ERROR = -1;
@@ -475,6 +476,12 @@ static hf_register_info HF_PCIE[] = {
     { &HF_PCIE_UNK,
         { "Unknown", "pcie.unk",
         FT_UINT16, BASE_HEX,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_DATA_COUNT,
+        { "Data Count", "pcie.data_count",
+        FT_NONE, BASE_NONE,
         NULL, 0x0,
         NULL, HFILL }
     },
@@ -838,6 +845,7 @@ static hf_register_info HF_PCIE_TLP[] = {
 };
 
 static int ETT_PCIE = -1;
+static int ETT_PCIE_DATA_COUNT = -1;
 static int ETT_PCIE_FRAME = -1;
 static int ETT_PCIE_DLLP = -1;
 static int ETT_PCIE_TLP = -1;
@@ -851,6 +859,7 @@ static int ETT_PCIE_TLP_ADDR_PH = -1;
 static int ETT_PCIE_TLP_PAYLOAD = -1;
 static int * const ETT[] = {
         &ETT_PCIE,
+        &ETT_PCIE_DATA_COUNT,
         &ETT_PCIE_FRAME,
         &ETT_PCIE_DLLP,
         &ETT_PCIE_TLP,
@@ -967,11 +976,19 @@ static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
     proto_tree_add_item(pcie_tree, HF_PCIE_TIMESTAMP_NS, tvb, 4, 8, ENC_LITTLE_ENDIAN);
     proto_tree_add_item(pcie_tree, HF_PCIE_UNK, tvb, 12, 2, ENC_LITTLE_ENDIAN);
 
+    proto_item * data_count_tree_item = proto_tree_add_item(pcie_tree, HF_PCIE_DATA_COUNT, tvb, 14, 2, ENC_NA);
+    proto_tree * data_count_tree = proto_item_add_subtree(data_count_tree_item, ETT_PCIE_DATA_COUNT);
+
     gboolean data_valid = false;
-    proto_tree_add_item_ret_boolean(pcie_tree, HF_PCIE_DATA_VALID, tvb, 14, 2, ENC_LITTLE_ENDIAN, &data_valid);
+    proto_tree_add_item_ret_boolean(data_count_tree, HF_PCIE_DATA_VALID, tvb, 14, 2, ENC_LITTLE_ENDIAN, &data_valid);
 
     uint32_t data_valid_count = 0;
-    proto_tree_add_item_ret_uint(pcie_tree, HF_PCIE_DATA_VALID_COUNT, tvb, 14, 2, ENC_LITTLE_ENDIAN, &data_valid_count);
+    proto_tree_add_item_ret_uint(data_count_tree, HF_PCIE_DATA_VALID_COUNT, tvb, 14, 2, ENC_LITTLE_ENDIAN, &data_valid_count);
+
+    proto_item_append_text(data_count_tree_item, ": %d", data_valid_count);
+    if (data_valid) {
+        proto_item_append_text(data_count_tree_item, " (Valid)");
+    }
 
     proto_tree_add_item(pcie_tree, HF_PCIE_SYMBOL_ERROR, tvb, 16, 4, ENC_LITTLE_ENDIAN);
     proto_tree_add_item(pcie_tree, HF_PCIE_DISPARITY_ERROR, tvb, 16, 4, ENC_LITTLE_ENDIAN);
