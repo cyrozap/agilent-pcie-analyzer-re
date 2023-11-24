@@ -399,6 +399,7 @@ static int HF_PCIE_UNK = -1;
 static int HF_PCIE_DATA_COUNT = -1;
 static int HF_PCIE_DATA_VALID = -1;
 static int HF_PCIE_DATA_VALID_COUNT = -1;
+static int HF_PCIE_FLAGS = -1;
 static int HF_PCIE_DIRECTION = -1;
 static int HF_PCIE_DISPARITY_ERROR = -1;
 static int HF_PCIE_SYMBOL_ERROR = -1;
@@ -495,6 +496,12 @@ static hf_register_info HF_PCIE[] = {
         { "Data Valid Count", "pcie.data_valid_count",
         FT_UINT16, BASE_DEC,
         NULL, 0x7FFF,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_FLAGS,
+        { "Flags", "pcie.flags",
+        FT_NONE, BASE_NONE,
+        NULL, 0x0,
         NULL, HFILL }
     },
     { &HF_PCIE_DIRECTION,
@@ -846,6 +853,7 @@ static hf_register_info HF_PCIE_TLP[] = {
 
 static int ETT_PCIE = -1;
 static int ETT_PCIE_DATA_COUNT = -1;
+static int ETT_PCIE_FLAGS = -1;
 static int ETT_PCIE_FRAME = -1;
 static int ETT_PCIE_DLLP = -1;
 static int ETT_PCIE_TLP = -1;
@@ -860,6 +868,7 @@ static int ETT_PCIE_TLP_PAYLOAD = -1;
 static int * const ETT[] = {
         &ETT_PCIE,
         &ETT_PCIE_DATA_COUNT,
+        &ETT_PCIE_FLAGS,
         &ETT_PCIE_FRAME,
         &ETT_PCIE_DLLP,
         &ETT_PCIE_TLP,
@@ -990,10 +999,23 @@ static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
         proto_item_append_text(data_count_tree_item, " (Valid)");
     }
 
+    proto_item * flags_tree_item = proto_tree_add_item(pcie_tree, HF_PCIE_FLAGS, tvb, 16, 4, ENC_NA);
+    proto_tree * flags_tree = proto_item_add_subtree(flags_tree_item, ETT_PCIE_FLAGS);
+
     gboolean direction = 0;
-    proto_tree_add_item_ret_boolean(pcie_tree, HF_PCIE_DIRECTION, tvb, 16, 4, ENC_LITTLE_ENDIAN, &direction);
-    proto_tree_add_item(pcie_tree, HF_PCIE_DISPARITY_ERROR, tvb, 16, 4, ENC_LITTLE_ENDIAN);
-    proto_tree_add_item(pcie_tree, HF_PCIE_SYMBOL_ERROR, tvb, 16, 4, ENC_LITTLE_ENDIAN);
+    proto_tree_add_item_ret_boolean(flags_tree, HF_PCIE_DIRECTION, tvb, 16, 4, ENC_LITTLE_ENDIAN, &direction);
+    gboolean disparity_error = 0;
+    proto_tree_add_item_ret_boolean(flags_tree, HF_PCIE_DISPARITY_ERROR, tvb, 16, 4, ENC_LITTLE_ENDIAN, &disparity_error);
+    gboolean symbol_error = 0;
+    proto_tree_add_item_ret_boolean(flags_tree, HF_PCIE_SYMBOL_ERROR, tvb, 16, 4, ENC_LITTLE_ENDIAN, &symbol_error);
+
+    proto_item_append_text(flags_tree_item, ": %s", direction ? "Upstream" : "Downstream");
+    if (disparity_error) {
+        proto_item_append_text(flags_tree_item, ", Disparity Error");
+    }
+    if (symbol_error) {
+        proto_item_append_text(flags_tree_item, ", Symbol Error");
+    }
 
     col_set_str(pinfo->cinfo, COL_PROTOCOL, "PCIe");
 
