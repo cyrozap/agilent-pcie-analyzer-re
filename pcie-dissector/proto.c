@@ -399,9 +399,9 @@ static int HF_PCIE_UNK = -1;
 static int HF_PCIE_DATA_COUNT = -1;
 static int HF_PCIE_DATA_VALID = -1;
 static int HF_PCIE_DATA_VALID_COUNT = -1;
-static int HF_PCIE_SYMBOL_ERROR = -1;
-static int HF_PCIE_DISPARITY_ERROR = -1;
 static int HF_PCIE_DIRECTION = -1;
+static int HF_PCIE_DISPARITY_ERROR = -1;
+static int HF_PCIE_SYMBOL_ERROR = -1;
 
 static int HF_PCIE_FRAME_START_TAG = -1;
 static int HF_PCIE_FRAME_TLP_RESERVED = -1;
@@ -497,10 +497,10 @@ static hf_register_info HF_PCIE[] = {
         NULL, 0x7FFF,
         NULL, HFILL }
     },
-    { &HF_PCIE_SYMBOL_ERROR,
-        { "Symbol Error", "pcie.symbol_error",
+    { &HF_PCIE_DIRECTION,
+        { "Direction", "pcie.direction",
         FT_BOOLEAN, 32,
-        NULL, 0x00000008,
+        TFS(&tfs_direction), 0x10000000,
         NULL, HFILL }
     },
     { &HF_PCIE_DISPARITY_ERROR,
@@ -509,10 +509,10 @@ static hf_register_info HF_PCIE[] = {
         NULL, 0x00000800,
         NULL, HFILL }
     },
-    { &HF_PCIE_DIRECTION,
-        { "Direction", "pcie.direction",
+    { &HF_PCIE_SYMBOL_ERROR,
+        { "Symbol Error", "pcie.symbol_error",
         FT_BOOLEAN, 32,
-        TFS(&tfs_direction), 0x10000000,
+        NULL, 0x00000008,
         NULL, HFILL }
     },
 };
@@ -990,11 +990,10 @@ static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
         proto_item_append_text(data_count_tree_item, " (Valid)");
     }
 
-    proto_tree_add_item(pcie_tree, HF_PCIE_SYMBOL_ERROR, tvb, 16, 4, ENC_LITTLE_ENDIAN);
-    proto_tree_add_item(pcie_tree, HF_PCIE_DISPARITY_ERROR, tvb, 16, 4, ENC_LITTLE_ENDIAN);
-
     gboolean direction = 0;
     proto_tree_add_item_ret_boolean(pcie_tree, HF_PCIE_DIRECTION, tvb, 16, 4, ENC_LITTLE_ENDIAN, &direction);
+    proto_tree_add_item(pcie_tree, HF_PCIE_DISPARITY_ERROR, tvb, 16, 4, ENC_LITTLE_ENDIAN);
+    proto_tree_add_item(pcie_tree, HF_PCIE_SYMBOL_ERROR, tvb, 16, 4, ENC_LITTLE_ENDIAN);
 
     col_set_str(pinfo->cinfo, COL_PROTOCOL, "PCIe");
 
