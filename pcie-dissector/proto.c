@@ -25,6 +25,7 @@
 #include <epan/expert.h>
 #include <epan/packet.h>
 #include <epan/proto.h>
+#include <wiretap/wtap.h>
 #include <wsutil/crc32.h>
 
 #include "proto.h"
