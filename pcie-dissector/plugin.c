@@ -26,8 +26,8 @@
 
 
 char const plugin_version[] = "0.1.0";
-uint32_t const plugin_want_major = 4;
-uint32_t const plugin_want_minor = 0;
+uint32_t const plugin_want_major = PLUGIN_WANT_MAJOR;
+uint32_t const plugin_want_minor = PLUGIN_WANT_MINOR;
 
 
 static const proto_plugin plugin_pcie = {
