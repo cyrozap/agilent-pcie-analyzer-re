@@ -34,6 +34,7 @@ install: pcie.so
 	install -Dm755 $< $(PLUGINS_DIRECTORY)/$<
 
 link: pcie.so
+	install -dm755 $(PLUGINS_DIRECTORY)
 	ln -s $(CURDIR)/$< $(PLUGINS_DIRECTORY)/$<
 
 clean:
