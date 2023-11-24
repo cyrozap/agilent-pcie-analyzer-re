@@ -19,6 +19,8 @@
 CFLAGS := $(shell pkg-config --cflags wireshark) -std=c17 -fPIC -Wall -Werror -O2
 LDFLAGS := $(shell pkg-config --libs wireshark)
 
+PLUGINS_DIRECTORY = $(HOME)/.local/lib/wireshark/plugins/4.0/epan
+
 
 all: pcie.so
 
@@ -29,10 +31,10 @@ pcie.so: plugin.o proto.o
 	$(CC) $(CFLAGS) $(LDFLAGS) -shared -o $@ $^
 
 install: pcie.so
-	install -Dm755 $< $(HOME)/.local/lib/wireshark/plugins/4.0/epan/$<
+	install -Dm755 $< $(PLUGINS_DIRECTORY)/$<
 
 link: pcie.so
-	ln -s $(CURDIR)/$< $(HOME)/.local/lib/wireshark/plugins/4.0/epan/$<
+	ln -s $(CURDIR)/$< $(PLUGINS_DIRECTORY)/$<
 
 clean:
 	rm -f *.o *.so
