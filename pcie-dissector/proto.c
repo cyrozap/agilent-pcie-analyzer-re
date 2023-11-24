@@ -1129,7 +1129,11 @@ static int dissect_pcie_tlp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree,
     proto_item * fmt_type_item = proto_tree_add_item_ret_uint(dw0_tree, HF_PCIE_TLP_FMT_TYPE, tvb, 0, 1, ENC_BIG_ENDIAN, &tlp_fmt_type);
     proto_tree * fmt_type_tree = proto_item_add_subtree(fmt_type_item, ETT_PCIE_TLP_FMT_TYPE);
 
-    proto_item_append_text(dw0_tree_item, ": %s", try_val_to_str(tlp_fmt_type, TLP_FMT_TYPE_SHORT));
+    const char * tlp_fmt_type_str = try_val_to_str(tlp_fmt_type, TLP_FMT_TYPE_SHORT);
+    if (tlp_fmt_type_str == NULL) {
+        tlp_fmt_type_str = "Unknown TLP FMT";
+    }
+    proto_item_append_text(dw0_tree_item, ": %s", tlp_fmt_type_str);
 
     uint32_t tlp_fmt = 0;
     proto_tree_add_item_ret_uint(fmt_type_tree, HF_PCIE_TLP_FMT, tvb, 0, 1, ENC_BIG_ENDIAN, &tlp_fmt);
@@ -1190,7 +1194,7 @@ static int dissect_pcie_tlp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree,
     uint32_t tag70 = 0;
 
     col_clear(pinfo->cinfo, COL_INFO);
-    col_add_str(pinfo->cinfo, COL_INFO, try_val_to_str(tlp_fmt_type, TLP_FMT_TYPE_SHORT));
+    col_add_str(pinfo->cinfo, COL_INFO, tlp_fmt_type_str);
 
     switch (tlp_fmt_type) {
         case 0b00000000:
@@ -1455,7 +1459,11 @@ static void dissect_tlp_cpl(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree,
         expert_add_info(pinfo, status_item, &EI_PCIE_TLP_CPL_STATUS_NOT_SUCCESSFUL);
     }
 
-    col_append_fstr(pinfo->cinfo, COL_INFO, ", %s", try_val_to_str(status, TLP_CPL_STATUS_SHORT));
+    const char * status_str = try_val_to_str(status, TLP_CPL_STATUS_SHORT);
+    if (status_str == NULL) {
+        status_str = "Invalid Completion Status";
+    }
+    col_append_fstr(pinfo->cinfo, COL_INFO, ", %s", status_str);
 
     gboolean bcm = false;
     proto_tree_add_item_ret_boolean(status_bcm_byte_count_tree, HF_PCIE_TLP_CPL_BCM, tvb, 6, 2, ENC_BIG_ENDIAN, &bcm);
@@ -1463,7 +1471,7 @@ static void dissect_tlp_cpl(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree,
     uint32_t byte_count = 0;
     proto_tree_add_item_ret_uint(status_bcm_byte_count_tree, HF_PCIE_TLP_CPL_BYTE_COUNT, tvb, 6, 2, ENC_BIG_ENDIAN, &byte_count);
 
-    proto_item_set_text(status_bcm_byte_count_item, "Completion Status: %s, BCM: %s, Byte Count: %d", try_val_to_str(status, TLP_CPL_STATUS_SHORT), bcm ? "True" : "False", byte_count);
+    proto_item_set_text(status_bcm_byte_count_item, "Completion Status: %s, BCM: %s, Byte Count: %d", status_str, bcm ? "True" : "False", byte_count);
 
     tlp_bdf_t req_bdf = {0};
     dissect_tlp_req_id(tree, tvb, 8, req_id, &req_bdf);
