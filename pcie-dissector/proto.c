@@ -406,6 +406,7 @@ static int HF_PCIE_DISPARITY_ERROR = -1;
 static int HF_PCIE_SYMBOL_ERROR = -1;
 
 static int HF_PCIE_FRAME_START_TAG = -1;
+static int HF_PCIE_FRAME_TLP_RESERVED_AND_SEQ = -1;
 static int HF_PCIE_FRAME_TLP_RESERVED = -1;
 static int HF_PCIE_FRAME_TLP_SEQ = -1;
 static int HF_PCIE_FRAME_TLP_LCRC = -1;
@@ -530,6 +531,12 @@ static hf_register_info HF_PCIE_FRAME[] = {
         { "Start Tag", "pcie.frame.start_tag",
         FT_UINT8, BASE_HEX,
         VALS(K_SYMBOLS), 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_FRAME_TLP_RESERVED_AND_SEQ,
+        { "TLP Sequence Number", "pcie.frame.tlp.reserved_and_seq",
+        FT_NONE, BASE_NONE,
+        NULL, 0x0,
         NULL, HFILL }
     },
     { &HF_PCIE_FRAME_TLP_RESERVED,
@@ -856,6 +863,7 @@ static int ETT_PCIE = -1;
 static int ETT_PCIE_DATA_COUNT = -1;
 static int ETT_PCIE_FLAGS = -1;
 static int ETT_PCIE_FRAME = -1;
+static int ETT_PCIE_FRAME_TLP_RESERVED_AND_SEQ = -1;
 static int ETT_PCIE_DLLP = -1;
 static int ETT_PCIE_TLP = -1;
 static int ETT_PCIE_TLP_DW0 = -1;
@@ -871,6 +879,7 @@ static int * const ETT[] = {
         &ETT_PCIE_DATA_COUNT,
         &ETT_PCIE_FLAGS,
         &ETT_PCIE_FRAME,
+        &ETT_PCIE_FRAME_TLP_RESERVED_AND_SEQ,
         &ETT_PCIE_DLLP,
         &ETT_PCIE_TLP,
         &ETT_PCIE_TLP_DW0,
@@ -1051,8 +1060,16 @@ static int dissect_pcie_frame(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tre
     switch (start_tag) {
         case K_27_7:
             col_set_str(pinfo->cinfo, COL_PROTOCOL, "PCIe TLP");
-            proto_tree_add_item(frame_tree, HF_PCIE_FRAME_TLP_RESERVED, tvb, 1, 2, ENC_BIG_ENDIAN);
-            proto_tree_add_item(frame_tree, HF_PCIE_FRAME_TLP_SEQ, tvb, 1, 2, ENC_BIG_ENDIAN);
+
+            proto_item * tlp_seq_tree_item = proto_tree_add_item(frame_tree, HF_PCIE_FRAME_TLP_RESERVED_AND_SEQ, tvb, 1, 2, ENC_NA);
+            proto_tree * tlp_seq_tree = proto_item_add_subtree(tlp_seq_tree_item, ETT_PCIE_FRAME_TLP_RESERVED_AND_SEQ);
+
+            proto_tree_add_item(tlp_seq_tree, HF_PCIE_FRAME_TLP_RESERVED, tvb, 1, 2, ENC_BIG_ENDIAN);
+
+            uint32_t tlp_seq = 0;
+            proto_tree_add_item_ret_uint(tlp_seq_tree, HF_PCIE_FRAME_TLP_SEQ, tvb, 1, 2, ENC_BIG_ENDIAN, &tlp_seq);
+
+            proto_item_append_text(tlp_seq_tree_item, ": %d", tlp_seq);
 
             const uint32_t tlp_offset = 3;
 
