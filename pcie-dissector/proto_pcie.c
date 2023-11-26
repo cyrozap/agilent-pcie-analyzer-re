@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 /*
- *  proto.c - PCIe dissector for Wireshark.
+ *  proto_pcie.c - PCIe dissector for Wireshark.
  *  Copyright (C) 2023  Forest Crossman <cyrozap@gmail.com>
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -28,7 +28,7 @@
 #include <wiretap/wtap.h>
 #include <wsutil/crc32.h>
 
-#include "proto.h"
+#include "proto_pcie.h"
 
 
 typedef struct tlp_bdf_s {

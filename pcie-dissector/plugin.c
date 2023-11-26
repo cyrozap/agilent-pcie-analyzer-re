@@ -22,7 +22,7 @@
 
 #include <epan/proto.h>
 
-#include "proto.h"
+#include "proto_pcie.h"
 
 
 char const plugin_version[] = "0.1.0";

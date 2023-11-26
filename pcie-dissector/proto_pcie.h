@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 /*
- *  proto.h - PCIe dissector for Wireshark.
+ *  proto_pcie.h - PCIe dissector for Wireshark.
  *  Copyright (C) 2023  Forest Crossman <cyrozap@gmail.com>
  *
  *  This program is free software: you can redistribute it and/or modify
