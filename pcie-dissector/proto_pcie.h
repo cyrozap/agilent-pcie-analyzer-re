@@ -18,5 +18,10 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#ifndef PROTO_PCIE_H_INCLUDED
+#define PROTO_PCIE_H_INCLUDED
+
 void proto_register_pcie();
 void proto_reg_handoff_pcie();
+
+#endif // PROTO_PCIE_H_INCLUDED

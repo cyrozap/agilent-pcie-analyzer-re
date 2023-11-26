@@ -18,5 +18,10 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#ifndef PROTO_NETTLP_H_INCLUDED
+#define PROTO_NETTLP_H_INCLUDED
+
 void proto_register_nettlp();
 void proto_reg_handoff_nettlp();
+
+#endif // PROTO_NETTLP_H_INCLUDED
