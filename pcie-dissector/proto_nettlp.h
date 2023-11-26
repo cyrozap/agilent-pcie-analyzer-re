@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 /*
- *  plugin.c - PCIe dissector plugin for Wireshark.
+ *  proto_nettlp.h - NetTLP dissector for Wireshark.
  *  Copyright (C) 2023  Forest Crossman <cyrozap@gmail.com>
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -18,34 +18,5 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <stdint.h>
-
-#include <epan/proto.h>
-
-#include "proto_nettlp.h"
-#include "proto_pcie.h"
-
-
-char const plugin_version[] = "0.1.0";
-uint32_t const plugin_want_major = PLUGIN_WANT_MAJOR;
-uint32_t const plugin_want_minor = PLUGIN_WANT_MINOR;
-
-
-static void proto_register_all(void) {
-	proto_register_pcie();
-	proto_register_nettlp();
-}
-
-static void proto_reg_handoff_all(void) {
-	proto_reg_handoff_pcie();
-	proto_reg_handoff_nettlp();
-}
-
-static const proto_plugin plugin_pcie = {
-	.register_protoinfo = proto_register_all,
-	.register_handoff = proto_reg_handoff_all,
-};
-
-void plugin_register() {
-	proto_register_plugin(&plugin_pcie);
-}
+void proto_register_nettlp();
+void proto_reg_handoff_nettlp();
