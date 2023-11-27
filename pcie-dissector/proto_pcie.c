@@ -1060,8 +1060,6 @@ static int dissect_pcie_frame(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tre
     switch (start_tag) {
         case K_27_7:
             {
-                col_set_str(pinfo->cinfo, COL_PROTOCOL, "PCIe TLP");
-
                 proto_item * tlp_seq_tree_item = proto_tree_add_item(frame_tree, HF_PCIE_FRAME_TLP_RESERVED_AND_SEQ, tvb, 1, 2, ENC_NA);
                 proto_tree * tlp_seq_tree = proto_item_add_subtree(tlp_seq_tree_item, ETT_PCIE_FRAME_TLP_RESERVED_AND_SEQ);
 
@@ -1109,7 +1107,6 @@ static int dissect_pcie_frame(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tre
             break;
         case K_28_2:
             {
-                col_set_str(pinfo->cinfo, COL_PROTOCOL, "PCIe DLLP");
                 tvbuff_t * dllp_tvb = tvb_new_subset_length(tvb, 1, 6);
                 call_dissector(PCIE_DLLP_HANDLE, dllp_tvb, pinfo, tree);
                 proto_tree_add_item(frame_tree, HF_PCIE_FRAME_END_TAG, tvb, 7, 1, ENC_BIG_ENDIAN);
@@ -1123,6 +1120,8 @@ static int dissect_pcie_frame(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tre
 }
 
 static int dissect_pcie_dllp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data) {
+    col_set_str(pinfo->cinfo, COL_PROTOCOL, "PCIe DLLP");
+
     uint32_t dllp_len = tvb_reported_length(tvb);
     proto_item * dllp_tree_item = proto_tree_add_item(tree, PROTO_PCIE_DLLP, tvb, 0, dllp_len, ENC_NA);
     proto_tree * dllp_tree = proto_item_add_subtree(dllp_tree_item, ETT_PCIE_DLLP);
@@ -1138,6 +1137,8 @@ static int dissect_pcie_dllp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree
 }
 
 static int dissect_pcie_tlp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data) {
+    col_set_str(pinfo->cinfo, COL_PROTOCOL, "PCIe TLP");
+
     uint32_t tlp_len = tvb_reported_length(tvb);
     proto_item * tlp_tree_item = proto_tree_add_item(tree, PROTO_PCIE_TLP, tvb, 0, tlp_len, ENC_NA);
     proto_tree * tlp_tree = proto_item_add_subtree(tlp_tree_item, ETT_PCIE_TLP);
