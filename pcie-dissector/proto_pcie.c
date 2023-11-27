@@ -1059,58 +1059,62 @@ static int dissect_pcie_frame(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tre
 
     switch (start_tag) {
         case K_27_7:
-            col_set_str(pinfo->cinfo, COL_PROTOCOL, "PCIe TLP");
+            {
+                col_set_str(pinfo->cinfo, COL_PROTOCOL, "PCIe TLP");
 
-            proto_item * tlp_seq_tree_item = proto_tree_add_item(frame_tree, HF_PCIE_FRAME_TLP_RESERVED_AND_SEQ, tvb, 1, 2, ENC_NA);
-            proto_tree * tlp_seq_tree = proto_item_add_subtree(tlp_seq_tree_item, ETT_PCIE_FRAME_TLP_RESERVED_AND_SEQ);
+                proto_item * tlp_seq_tree_item = proto_tree_add_item(frame_tree, HF_PCIE_FRAME_TLP_RESERVED_AND_SEQ, tvb, 1, 2, ENC_NA);
+                proto_tree * tlp_seq_tree = proto_item_add_subtree(tlp_seq_tree_item, ETT_PCIE_FRAME_TLP_RESERVED_AND_SEQ);
 
-            proto_tree_add_item(tlp_seq_tree, HF_PCIE_FRAME_TLP_RESERVED, tvb, 1, 2, ENC_BIG_ENDIAN);
+                proto_tree_add_item(tlp_seq_tree, HF_PCIE_FRAME_TLP_RESERVED, tvb, 1, 2, ENC_BIG_ENDIAN);
 
-            uint32_t tlp_seq = 0;
-            proto_tree_add_item_ret_uint(tlp_seq_tree, HF_PCIE_FRAME_TLP_SEQ, tvb, 1, 2, ENC_BIG_ENDIAN, &tlp_seq);
+                uint32_t tlp_seq = 0;
+                proto_tree_add_item_ret_uint(tlp_seq_tree, HF_PCIE_FRAME_TLP_SEQ, tvb, 1, 2, ENC_BIG_ENDIAN, &tlp_seq);
 
-            proto_item_append_text(tlp_seq_tree_item, ": %d", tlp_seq);
+                proto_item_append_text(tlp_seq_tree_item, ": %d", tlp_seq);
 
-            const uint32_t tlp_offset = 3;
+                const uint32_t tlp_offset = 3;
 
-            // Peek at the first DW of the TLP to determine the length of the TLP.
-            uint32_t tlp_dw0 = tvb_get_ntohl(tvb, tlp_offset);
-            uint32_t tlp_fmt_type = tlp_dw0 >> 24;
-            uint32_t tlp_fmt = (tlp_fmt_type >> 5);
-            uint32_t header_dw_count = 3;
-            if (tlp_fmt & 0b001) {
-                header_dw_count = 4;
+                // Peek at the first DW of the TLP to determine the length of the TLP.
+                uint32_t tlp_dw0 = tvb_get_ntohl(tvb, tlp_offset);
+                uint32_t tlp_fmt_type = tlp_dw0 >> 24;
+                uint32_t tlp_fmt = (tlp_fmt_type >> 5);
+                uint32_t header_dw_count = 3;
+                if (tlp_fmt & 0b001) {
+                    header_dw_count = 4;
+                }
+                uint32_t payload_dw_count = 0;
+                if (tlp_fmt & 0b010) {
+                    payload_dw_count = extract_length_from_tlp_dw0(tlp_dw0);
+                }
+                uint32_t ecrc_dw_count = 0;
+                if (tlp_dw0 & (1 << 15)) {
+                    ecrc_dw_count = 1;
+                }
+                uint32_t tlp_len = 4 * (header_dw_count + payload_dw_count + ecrc_dw_count);
+
+                // Dissect the TLP.
+                tvbuff_t * tlp_tvb = tvb_new_subset_length(tvb, tlp_offset, tlp_len);
+                call_dissector(PCIE_TLP_HANDLE, tlp_tvb, pinfo, tree);
+
+                uint32_t lcrc = 0;
+                proto_item * lcrc_item = proto_tree_add_item_ret_uint(frame_tree, HF_PCIE_FRAME_TLP_LCRC, tvb, tlp_offset+tlp_len, 4, ENC_LITTLE_ENDIAN, &lcrc);
+
+                // Verify the LCRC in the frame matches the calculated value.
+                if (lcrc != crc32_ccitt_tvb_offset(tvb, 1, 2 + tlp_len)) {
+                    expert_add_info(pinfo, lcrc_item, &EI_PCIE_FRAME_LCRC_INVALID);
+                }
+
+                proto_tree_add_item(frame_tree, HF_PCIE_FRAME_END_TAG, tvb, tlp_offset+tlp_len+4, 1, ENC_BIG_ENDIAN);
+
             }
-            uint32_t payload_dw_count = 0;
-            if (tlp_fmt & 0b010) {
-                payload_dw_count = extract_length_from_tlp_dw0(tlp_dw0);
-            }
-            uint32_t ecrc_dw_count = 0;
-            if (tlp_dw0 & (1 << 15)) {
-                ecrc_dw_count = 1;
-            }
-            uint32_t tlp_len = 4 * (header_dw_count + payload_dw_count + ecrc_dw_count);
-
-            // Dissect the TLP.
-            tvbuff_t * tlp_tvb = tvb_new_subset_length(tvb, tlp_offset, tlp_len);
-            call_dissector(PCIE_TLP_HANDLE, tlp_tvb, pinfo, tree);
-
-            uint32_t lcrc = 0;
-            proto_item * lcrc_item = proto_tree_add_item_ret_uint(frame_tree, HF_PCIE_FRAME_TLP_LCRC, tvb, tlp_offset+tlp_len, 4, ENC_LITTLE_ENDIAN, &lcrc);
-
-            // Verify the LCRC in the frame matches the calculated value.
-            if (lcrc != crc32_ccitt_tvb_offset(tvb, 1, 2 + tlp_len)) {
-                expert_add_info(pinfo, lcrc_item, &EI_PCIE_FRAME_LCRC_INVALID);
-            }
-
-            proto_tree_add_item(frame_tree, HF_PCIE_FRAME_END_TAG, tvb, tlp_offset+tlp_len+4, 1, ENC_BIG_ENDIAN);
-
             break;
         case K_28_2:
-            col_set_str(pinfo->cinfo, COL_PROTOCOL, "PCIe DLLP");
-            tvbuff_t * dllp_tvb = tvb_new_subset_length(tvb, 1, 6);
-            call_dissector(PCIE_DLLP_HANDLE, dllp_tvb, pinfo, tree);
-            proto_tree_add_item(frame_tree, HF_PCIE_FRAME_END_TAG, tvb, 7, 1, ENC_BIG_ENDIAN);
+            {
+                col_set_str(pinfo->cinfo, COL_PROTOCOL, "PCIe DLLP");
+                tvbuff_t * dllp_tvb = tvb_new_subset_length(tvb, 1, 6);
+                call_dissector(PCIE_DLLP_HANDLE, dllp_tvb, pinfo, tree);
+                proto_tree_add_item(frame_tree, HF_PCIE_FRAME_END_TAG, tvb, 7, 1, ENC_BIG_ENDIAN);
+            }
             break;
         default:
             break;
