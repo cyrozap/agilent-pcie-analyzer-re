@@ -895,6 +895,7 @@ static int * const ETT[] = {
 static expert_field EI_PCIE_DISPARITY_ERROR = EI_INIT;
 static expert_field EI_PCIE_SYMBOL_ERROR = EI_INIT;
 
+static expert_field EI_PCIE_FRAME_TLP_RESERVED_SET = EI_INIT;
 static expert_field EI_PCIE_FRAME_LCRC_INVALID = EI_INIT;
 
 static expert_field EI_PCIE_DLLP_CRC_INVALID = EI_INIT;
@@ -914,6 +915,10 @@ static ei_register_info EI_PCIE[] = {
 };
 
 static ei_register_info EI_PCIE_FRAME[] = {
+    { &EI_PCIE_FRAME_TLP_RESERVED_SET,
+        { "pcie.frame.tlp.reserved_bit_set", PI_PROTOCOL, PI_WARN,
+            "Reserved bit set", EXPFILL }
+    },
     { &EI_PCIE_FRAME_LCRC_INVALID,
         { "pcie.frame.tlp.lcrc_invalid", PI_CHECKSUM, PI_WARN,
             "LCRC is invalid", EXPFILL }
@@ -1079,7 +1084,11 @@ static int dissect_pcie_frame(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tre
                 proto_item * tlp_seq_tree_item = proto_tree_add_item(frame_tree, HF_PCIE_FRAME_TLP_RESERVED_AND_SEQ, tvb, 1, 2, ENC_NA);
                 proto_tree * tlp_seq_tree = proto_item_add_subtree(tlp_seq_tree_item, ETT_PCIE_FRAME_TLP_RESERVED_AND_SEQ);
 
-                proto_tree_add_item(tlp_seq_tree, HF_PCIE_FRAME_TLP_RESERVED, tvb, 1, 2, ENC_BIG_ENDIAN);
+                uint32_t tlp_res = 0;
+                proto_item * tlp_res_item = proto_tree_add_item_ret_uint(tlp_seq_tree, HF_PCIE_FRAME_TLP_RESERVED, tvb, 1, 2, ENC_BIG_ENDIAN, &tlp_res);
+                if (tlp_res != 0) {
+                    expert_add_info(pinfo, tlp_res_item, &EI_PCIE_FRAME_TLP_RESERVED_SET);
+                }
 
                 uint32_t tlp_seq = 0;
                 proto_tree_add_item_ret_uint(tlp_seq_tree, HF_PCIE_FRAME_TLP_SEQ, tvb, 1, 2, ENC_BIG_ENDIAN, &tlp_seq);
