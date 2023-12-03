@@ -897,6 +897,7 @@ static expert_field EI_PCIE_SYMBOL_ERROR = EI_INIT;
 
 static expert_field EI_PCIE_FRAME_TLP_RESERVED_SET = EI_INIT;
 static expert_field EI_PCIE_FRAME_LCRC_INVALID = EI_INIT;
+static expert_field EI_PCIE_FRAME_END_TAG_INVALID = EI_INIT;
 
 static expert_field EI_PCIE_DLLP_CRC_INVALID = EI_INIT;
 
@@ -922,6 +923,10 @@ static ei_register_info EI_PCIE_FRAME[] = {
     { &EI_PCIE_FRAME_LCRC_INVALID,
         { "pcie.frame.tlp.lcrc_invalid", PI_CHECKSUM, PI_WARN,
             "LCRC is invalid", EXPFILL }
+    },
+    { &EI_PCIE_FRAME_END_TAG_INVALID,
+        { "pcie.frame.end_tag_invalid", PI_PROTOCOL, PI_WARN,
+            "End Tag is invalid", EXPFILL }
     },
 };
 
@@ -1127,14 +1132,23 @@ static int dissect_pcie_frame(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tre
                     expert_add_info(pinfo, lcrc_item, &EI_PCIE_FRAME_LCRC_INVALID);
                 }
 
-                proto_tree_add_item(frame_tree, HF_PCIE_FRAME_END_TAG, tvb, tlp_offset+tlp_len+4, 1, ENC_BIG_ENDIAN);
+                uint32_t end_tag = 0;
+                proto_item * end_tag_item = proto_tree_add_item_ret_uint(frame_tree, HF_PCIE_FRAME_END_TAG, tvb, tlp_offset+tlp_len+4, 1, ENC_BIG_ENDIAN, &end_tag);
+                if (end_tag != K_29_7) {
+                    expert_add_info(pinfo, end_tag_item, &EI_PCIE_FRAME_END_TAG_INVALID);
+                }
             }
             break;
         case K_28_2:
             {
                 tvbuff_t * dllp_tvb = tvb_new_subset_length(tvb, 1, 6);
                 call_dissector(PCIE_DLLP_HANDLE, dllp_tvb, pinfo, tree);
-                proto_tree_add_item(frame_tree, HF_PCIE_FRAME_END_TAG, tvb, 7, 1, ENC_BIG_ENDIAN);
+
+                uint32_t end_tag = 0;
+                proto_item * end_tag_item = proto_tree_add_item_ret_uint(frame_tree, HF_PCIE_FRAME_END_TAG, tvb, 7, 1, ENC_BIG_ENDIAN, &end_tag);
+                if (end_tag != K_29_7) {
+                    expert_add_info(pinfo, end_tag_item, &EI_PCIE_FRAME_END_TAG_INVALID);
+                }
             }
             break;
         default:
