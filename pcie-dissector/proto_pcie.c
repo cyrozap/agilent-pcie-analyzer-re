@@ -892,12 +892,26 @@ static int * const ETT[] = {
         &ETT_PCIE_TLP_PAYLOAD,
 };
 
+static expert_field EI_PCIE_DISPARITY_ERROR = EI_INIT;
+static expert_field EI_PCIE_SYMBOL_ERROR = EI_INIT;
+
 static expert_field EI_PCIE_FRAME_LCRC_INVALID = EI_INIT;
 
 static expert_field EI_PCIE_DLLP_CRC_INVALID = EI_INIT;
 
 static expert_field EI_PCIE_TLP_CPL_STATUS_NOT_SUCCESSFUL = EI_INIT;
 static expert_field EI_PCIE_TLP_ECRC_INVALID = EI_INIT;
+
+static ei_register_info EI_PCIE[] = {
+    { &EI_PCIE_DISPARITY_ERROR,
+        { "pcie.disparity_error.ei", PI_CHECKSUM, PI_WARN,
+            "Disparity error", EXPFILL }
+    },
+    { &EI_PCIE_SYMBOL_ERROR,
+        { "pcie.symbol_error.ei", PI_CHECKSUM, PI_WARN,
+            "Symbol error", EXPFILL }
+    },
+};
 
 static ei_register_info EI_PCIE_FRAME[] = {
     { &EI_PCIE_FRAME_LCRC_INVALID,
@@ -1015,16 +1029,18 @@ static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
     gboolean direction = 0;
     proto_tree_add_item_ret_boolean(flags_tree, HF_PCIE_DIRECTION, tvb, 16, 4, ENC_LITTLE_ENDIAN, &direction);
     gboolean disparity_error = 0;
-    proto_tree_add_item_ret_boolean(flags_tree, HF_PCIE_DISPARITY_ERROR, tvb, 16, 4, ENC_LITTLE_ENDIAN, &disparity_error);
+    proto_item * disparity_error_item = proto_tree_add_item_ret_boolean(flags_tree, HF_PCIE_DISPARITY_ERROR, tvb, 16, 4, ENC_LITTLE_ENDIAN, &disparity_error);
     gboolean symbol_error = 0;
-    proto_tree_add_item_ret_boolean(flags_tree, HF_PCIE_SYMBOL_ERROR, tvb, 16, 4, ENC_LITTLE_ENDIAN, &symbol_error);
+    proto_item * symbol_error_item = proto_tree_add_item_ret_boolean(flags_tree, HF_PCIE_SYMBOL_ERROR, tvb, 16, 4, ENC_LITTLE_ENDIAN, &symbol_error);
 
     proto_item_append_text(flags_tree_item, ": %s", direction ? "Upstream" : "Downstream");
     if (disparity_error) {
         proto_item_append_text(flags_tree_item, ", Disparity Error");
+        expert_add_info(pinfo, disparity_error_item, &EI_PCIE_DISPARITY_ERROR);
     }
     if (symbol_error) {
         proto_item_append_text(flags_tree_item, ", Symbol Error");
+        expert_add_info(pinfo, symbol_error_item, &EI_PCIE_SYMBOL_ERROR);
     }
 
     col_set_str(pinfo->cinfo, COL_PROTOCOL, "PCIe");
@@ -1512,6 +1528,9 @@ static void proto_register_pcie_capture() {
     );
 
     proto_register_field_array(PROTO_PCIE, HF_PCIE, array_length(HF_PCIE));
+
+    expert_module_t * expert = expert_register_protocol(PROTO_PCIE);
+    expert_register_field_array(expert, EI_PCIE, array_length(EI_PCIE));
 
     PCIE_HANDLE = register_dissector("pcie", dissect_pcie, PROTO_PCIE);
 }
