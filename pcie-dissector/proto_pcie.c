@@ -417,6 +417,9 @@ static int HF_PCIE_FRAME_TLP_LCRC = -1;
 static int HF_PCIE_FRAME_END_TAG = -1;
 
 static int HF_PCIE_DLLP_TYPE = -1;
+static int HF_PCIE_DLLP_ACK_NAK_RESERVED_AND_SEQ_NUM = -1;
+static int HF_PCIE_DLLP_ACK_NAK_RESERVED = -1;
+static int HF_PCIE_DLLP_ACK_NAK_SEQ_NUM = -1;
 static int HF_PCIE_DLLP_CRC = -1;
 
 static int HF_PCIE_TLP_DW0 = -1;
@@ -574,6 +577,24 @@ static hf_register_info HF_PCIE_DLLP[] = {
         { "Type", "pcie.dllp.type",
         FT_UINT8, BASE_HEX,
         VALS(DLLP_TYPE), 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_DLLP_ACK_NAK_RESERVED_AND_SEQ_NUM,
+        { "Ack/Nak Sequence Number", "pcie.dllp.ack_nak.reserved_and_seq",
+        FT_NONE, BASE_NONE,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_DLLP_ACK_NAK_RESERVED,
+        { "Reserved", "pcie.dllp.ack_nak.reserved",
+        FT_UINT24, BASE_HEX,
+        NULL, 0xFFF000,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_DLLP_ACK_NAK_SEQ_NUM,
+        { "Ack/Nak Sequence Number", "pcie.dllp.ack_nak.seq",
+        FT_UINT24, BASE_DEC,
+        NULL, 0x000FFF,
         NULL, HFILL }
     },
     { &HF_PCIE_DLLP_CRC,
@@ -869,6 +890,7 @@ static int ETT_PCIE_FLAGS = -1;
 static int ETT_PCIE_FRAME = -1;
 static int ETT_PCIE_FRAME_TLP_RESERVED_AND_SEQ = -1;
 static int ETT_PCIE_DLLP = -1;
+static int ETT_PCIE_DLLP_ACK_NAK_RESERVED_AND_SEQ_NUM = -1;
 static int ETT_PCIE_TLP = -1;
 static int ETT_PCIE_TLP_DW0 = -1;
 static int ETT_PCIE_TLP_FMT_TYPE = -1;
@@ -885,6 +907,7 @@ static int * const ETT[] = {
         &ETT_PCIE_FRAME,
         &ETT_PCIE_FRAME_TLP_RESERVED_AND_SEQ,
         &ETT_PCIE_DLLP,
+        &ETT_PCIE_DLLP_ACK_NAK_RESERVED_AND_SEQ_NUM,
         &ETT_PCIE_TLP,
         &ETT_PCIE_TLP_DW0,
         &ETT_PCIE_TLP_FMT_TYPE,
@@ -903,6 +926,7 @@ static expert_field EI_PCIE_FRAME_TLP_RESERVED_SET = EI_INIT;
 static expert_field EI_PCIE_FRAME_LCRC_INVALID = EI_INIT;
 static expert_field EI_PCIE_FRAME_END_TAG_INVALID = EI_INIT;
 
+static expert_field EI_PCIE_DLLP_RESERVED_SET = EI_INIT;
 static expert_field EI_PCIE_DLLP_CRC_INVALID = EI_INIT;
 
 static expert_field EI_PCIE_TLP_CPL_STATUS_NOT_SUCCESSFUL = EI_INIT;
@@ -935,6 +959,10 @@ static ei_register_info EI_PCIE_FRAME[] = {
 };
 
 static ei_register_info EI_PCIE_DLLP[] = {
+    { &EI_PCIE_DLLP_RESERVED_SET,
+        { "pcie.dllp.reserved_bit_set", PI_PROTOCOL, PI_WARN,
+            "Reserved bit set", EXPFILL }
+    },
     { &EI_PCIE_DLLP_CRC_INVALID,
         { "pcie.dllp.crc_invalid", PI_CHECKSUM, PI_WARN,
             "CRC is invalid", EXPFILL }
@@ -1177,6 +1205,26 @@ static int dissect_pcie_dllp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree
         col_append_fstr(pinfo->cinfo, COL_INFO, "%s", dllp_type_str);
     } else {
         col_append_fstr(pinfo->cinfo, COL_INFO, "Unknown DLLP type (0x%02X)", dllp_type);
+    }
+
+    switch (dllp_type) {
+        case 0b00000000:
+        case 0b00010000:
+            {
+                proto_item * ack_nak_seq_tree_item = proto_tree_add_item(dllp_tree, HF_PCIE_DLLP_ACK_NAK_RESERVED_AND_SEQ_NUM, tvb, 1, 3, ENC_NA);
+                proto_tree * ack_nak_seq_tree = proto_item_add_subtree(ack_nak_seq_tree_item, ETT_PCIE_DLLP_ACK_NAK_RESERVED_AND_SEQ_NUM);
+
+                uint32_t dllp_res = 0;
+                proto_item * dllp_res_item = proto_tree_add_item_ret_uint(ack_nak_seq_tree, HF_PCIE_DLLP_ACK_NAK_RESERVED, tvb, 1, 3, ENC_BIG_ENDIAN, &dllp_res);
+                if (dllp_res != 0) {
+                    expert_add_info(pinfo, dllp_res_item, &EI_PCIE_DLLP_RESERVED_SET);
+                }
+
+                uint32_t seq_num;
+                proto_tree_add_item_ret_uint(ack_nak_seq_tree, HF_PCIE_DLLP_ACK_NAK_SEQ_NUM, tvb, 1, 3, ENC_BIG_ENDIAN, &seq_num);
+                proto_item_append_text(ack_nak_seq_tree_item, ": %d", seq_num);
+            }
+            break;
     }
 
     uint32_t crc = 0;
