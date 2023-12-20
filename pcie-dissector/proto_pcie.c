@@ -1168,7 +1168,16 @@ static int dissect_pcie_dllp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree
     uint32_t dllp_len = tvb_reported_length(tvb);
     proto_item * dllp_tree_item = proto_tree_add_item(tree, PROTO_PCIE_DLLP, tvb, 0, dllp_len, ENC_NA);
     proto_tree * dllp_tree = proto_item_add_subtree(dllp_tree_item, ETT_PCIE_DLLP);
-    proto_tree_add_item(dllp_tree, HF_PCIE_DLLP_TYPE, tvb, 0, 1, ENC_BIG_ENDIAN);
+
+    uint32_t dllp_type = 0;
+    proto_tree_add_item_ret_uint(dllp_tree, HF_PCIE_DLLP_TYPE, tvb, 0, 1, ENC_BIG_ENDIAN, &dllp_type);
+
+    const char * dllp_type_str = try_val_to_str(dllp_type, DLLP_TYPE);
+    if (dllp_type_str != NULL) {
+        col_append_fstr(pinfo->cinfo, COL_INFO, "%s", dllp_type_str);
+    } else {
+        col_append_fstr(pinfo->cinfo, COL_INFO, "Unknown DLLP type (0x%02X)", dllp_type);
+    }
 
     uint32_t crc = 0;
     proto_item * crc_item = proto_tree_add_item_ret_uint(dllp_tree, HF_PCIE_DLLP_CRC, tvb, 4, 2, ENC_LITTLE_ENDIAN, &crc);
