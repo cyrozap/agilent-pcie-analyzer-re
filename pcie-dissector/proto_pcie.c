@@ -420,6 +420,7 @@ static int HF_PCIE_DLLP_TYPE = -1;
 static int HF_PCIE_DLLP_ACK_NAK_RESERVED_AND_SEQ_NUM = -1;
 static int HF_PCIE_DLLP_ACK_NAK_RESERVED = -1;
 static int HF_PCIE_DLLP_ACK_NAK_SEQ_NUM = -1;
+static int HF_PCIE_DLLP_PM_RESERVED = -1;
 static int HF_PCIE_DLLP_CRC = -1;
 
 static int HF_PCIE_TLP_DW0 = -1;
@@ -595,6 +596,12 @@ static hf_register_info HF_PCIE_DLLP[] = {
         { "Ack/Nak Sequence Number", "pcie.dllp.ack_nak.seq",
         FT_UINT24, BASE_DEC,
         NULL, 0x000FFF,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_DLLP_PM_RESERVED,
+        { "Reserved", "pcie.dllp.pm.reserved",
+        FT_UINT24, BASE_HEX,
+        NULL, 0x0,
         NULL, HFILL }
     },
     { &HF_PCIE_DLLP_CRC,
@@ -1223,6 +1230,15 @@ static int dissect_pcie_dllp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree
                 uint32_t seq_num;
                 proto_tree_add_item_ret_uint(ack_nak_seq_tree, HF_PCIE_DLLP_ACK_NAK_SEQ_NUM, tvb, 1, 3, ENC_BIG_ENDIAN, &seq_num);
                 proto_item_append_text(ack_nak_seq_tree_item, ": %d", seq_num);
+            }
+            break;
+        default:
+            if ((dllp_type & 0b11111000) == 0b00100000) {
+                uint32_t dllp_res = 0;
+                proto_item * dllp_res_item = proto_tree_add_item_ret_uint(dllp_tree, HF_PCIE_DLLP_PM_RESERVED, tvb, 1, 3, ENC_BIG_ENDIAN, &dllp_res);
+                if (dllp_res != 0) {
+                    expert_add_info(pinfo, dllp_res_item, &EI_PCIE_DLLP_RESERVED_SET);
+                }
             }
             break;
     }
