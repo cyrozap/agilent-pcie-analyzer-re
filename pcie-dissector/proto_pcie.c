@@ -352,6 +352,10 @@ static const value_string CFG_REGS[] = {
 
 static const value_string TLP_MSG_CODES[] = {
     { 0b00000000, "Unlock" },
+    { 0b00000001, "Invalidate Request Message" },
+    { 0b00000010, "Invalidate Completion Message" },
+    { 0b00000100, "Page Request Message" },
+    { 0b00000101, "PRG Response Message" },
     { 0b00010000, "LTR" },
     { 0b00010010, "OBFF" },
     { 0b00010100, "PM_Active_State_Nak" },
