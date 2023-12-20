@@ -1504,7 +1504,13 @@ static void dissect_tlp_cfg_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *t
 static void dissect_tlp_msg_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70) {
     dissect_tlp_req_id_and_tag70(tvb, pinfo, tree, data, req_id, tag70);
 
-    proto_tree_add_item(tree, HF_PCIE_TLP_MSG_CODE, tvb, 7, 1, ENC_BIG_ENDIAN);
+    uint32_t msg_code = 0;
+    proto_tree_add_item_ret_uint(tree, HF_PCIE_TLP_MSG_CODE, tvb, 7, 1, ENC_BIG_ENDIAN, &msg_code);
+
+    const char * msg_code_str = try_val_to_str(msg_code, TLP_MSG_CODES);
+    if (msg_code_str != NULL) {
+        col_append_fstr(pinfo->cinfo, COL_INFO, ", %s", msg_code_str);
+    }
 }
 
 static void dissect_tlp_cpl(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70) {
