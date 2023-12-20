@@ -1194,10 +1194,11 @@ static int dissect_pcie_tlp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree,
     proto_tree * fmt_type_tree = proto_item_add_subtree(fmt_type_item, ETT_PCIE_TLP_FMT_TYPE);
 
     const char * tlp_fmt_type_str = try_val_to_str(tlp_fmt_type, TLP_FMT_TYPE_SHORT);
-    if (tlp_fmt_type_str == NULL) {
-        tlp_fmt_type_str = "Unknown TLP FMT";
+    if (tlp_fmt_type_str != NULL) {
+        proto_item_append_text(dw0_tree_item, ": %s", tlp_fmt_type_str);
+    } else {
+        proto_item_append_text(dw0_tree_item, ": Unknown TLP FMT (0x%02X)", tlp_fmt_type);
     }
-    proto_item_append_text(dw0_tree_item, ": %s", tlp_fmt_type_str);
 
     uint32_t tlp_fmt = 0;
     proto_tree_add_item_ret_uint(fmt_type_tree, HF_PCIE_TLP_FMT, tvb, 0, 1, ENC_BIG_ENDIAN, &tlp_fmt);
@@ -1258,7 +1259,11 @@ static int dissect_pcie_tlp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree,
     uint32_t tag70 = 0;
 
     col_clear(pinfo->cinfo, COL_INFO);
-    col_add_str(pinfo->cinfo, COL_INFO, tlp_fmt_type_str);
+    if (tlp_fmt_type_str != NULL) {
+        col_add_str(pinfo->cinfo, COL_INFO, tlp_fmt_type_str);
+    } else {
+        col_append_fstr(pinfo->cinfo, COL_INFO, "Unknown TLP FMT (0x%02X)", tlp_fmt_type);
+    }
 
     switch (tlp_fmt_type) {
         case 0b00000000:
