@@ -421,6 +421,11 @@ static int HF_PCIE_DLLP_ACK_NAK_RESERVED_AND_SEQ_NUM = -1;
 static int HF_PCIE_DLLP_ACK_NAK_RESERVED = -1;
 static int HF_PCIE_DLLP_ACK_NAK_SEQ_NUM = -1;
 static int HF_PCIE_DLLP_PM_RESERVED = -1;
+static int HF_PCIE_DLLP_INIT_UPDATE_FC = -1;
+static int HF_PCIE_DLLP_INIT_UPDATE_FC_HDR_SCALE = -1;
+static int HF_PCIE_DLLP_INIT_UPDATE_FC_HDR_FC = -1;
+static int HF_PCIE_DLLP_INIT_UPDATE_FC_DATA_SCALE = -1;
+static int HF_PCIE_DLLP_INIT_UPDATE_FC_DATA_FC = -1;
 static int HF_PCIE_DLLP_CRC = -1;
 
 static int HF_PCIE_TLP_DW0 = -1;
@@ -602,6 +607,36 @@ static hf_register_info HF_PCIE_DLLP[] = {
         { "Reserved", "pcie.dllp.pm.reserved",
         FT_UINT24, BASE_HEX,
         NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_DLLP_INIT_UPDATE_FC,
+        { "InitFC1/InitFC2/UpdateFC", "pcie.dllp.init_update_fc",
+        FT_NONE, BASE_NONE,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_DLLP_INIT_UPDATE_FC_HDR_SCALE,
+        { "HdrScale", "pcie.dllp.init_update_fc.hdr_scale",
+        FT_UINT24, BASE_DEC,
+        NULL, 0xC00000,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_DLLP_INIT_UPDATE_FC_HDR_FC,
+        { "HdrFC", "pcie.dllp.init_update_fc.hdr_fc",
+        FT_UINT24, BASE_DEC,
+        NULL, 0x3FC000,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_DLLP_INIT_UPDATE_FC_DATA_SCALE,
+        { "DataScale", "pcie.dllp.init_update_fc.data_scale",
+        FT_UINT24, BASE_DEC,
+        NULL, 0x003000,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_DLLP_INIT_UPDATE_FC_DATA_FC,
+        { "DataFC", "pcie.dllp.init_update_fc.data_fc",
+        FT_UINT24, BASE_DEC,
+        NULL, 0x000FFF,
         NULL, HFILL }
     },
     { &HF_PCIE_DLLP_CRC,
@@ -898,6 +933,7 @@ static int ETT_PCIE_FRAME = -1;
 static int ETT_PCIE_FRAME_TLP_RESERVED_AND_SEQ = -1;
 static int ETT_PCIE_DLLP = -1;
 static int ETT_PCIE_DLLP_ACK_NAK_RESERVED_AND_SEQ_NUM = -1;
+static int ETT_PCIE_DLLP_INIT_UPDATE_FC = -1;
 static int ETT_PCIE_TLP = -1;
 static int ETT_PCIE_TLP_DW0 = -1;
 static int ETT_PCIE_TLP_FMT_TYPE = -1;
@@ -915,6 +951,7 @@ static int * const ETT[] = {
         &ETT_PCIE_FRAME_TLP_RESERVED_AND_SEQ,
         &ETT_PCIE_DLLP,
         &ETT_PCIE_DLLP_ACK_NAK_RESERVED_AND_SEQ_NUM,
+        &ETT_PCIE_DLLP_INIT_UPDATE_FC,
         &ETT_PCIE_TLP,
         &ETT_PCIE_TLP_DW0,
         &ETT_PCIE_TLP_FMT_TYPE,
@@ -1239,6 +1276,14 @@ static int dissect_pcie_dllp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree
                 if (dllp_res != 0) {
                     expert_add_info(pinfo, dllp_res_item, &EI_PCIE_DLLP_RESERVED_SET);
                 }
+            } else if (((dllp_type & 0b11000000) != 0) && ((dllp_type & 0b00110000) != 0b00110000) && ((dllp_type & 0b00001000) == 0)) {
+                proto_item * init_update_fc_tree_item = proto_tree_add_item(dllp_tree, HF_PCIE_DLLP_INIT_UPDATE_FC, tvb, 1, 3, ENC_NA);
+                proto_tree * init_update_fc_tree = proto_item_add_subtree(init_update_fc_tree_item, ETT_PCIE_DLLP_INIT_UPDATE_FC);
+
+                proto_tree_add_item(init_update_fc_tree, HF_PCIE_DLLP_INIT_UPDATE_FC_HDR_SCALE, tvb, 1, 3, ENC_BIG_ENDIAN);
+                proto_tree_add_item(init_update_fc_tree, HF_PCIE_DLLP_INIT_UPDATE_FC_HDR_FC, tvb, 1, 3, ENC_BIG_ENDIAN);
+                proto_tree_add_item(init_update_fc_tree, HF_PCIE_DLLP_INIT_UPDATE_FC_DATA_SCALE, tvb, 1, 3, ENC_BIG_ENDIAN);
+                proto_tree_add_item(init_update_fc_tree, HF_PCIE_DLLP_INIT_UPDATE_FC_DATA_FC, tvb, 1, 3, ENC_BIG_ENDIAN);
             }
             break;
     }
