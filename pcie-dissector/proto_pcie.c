@@ -420,6 +420,9 @@ static int HF_PCIE_DLLP_TYPE = -1;
 static int HF_PCIE_DLLP_ACK_NAK_RESERVED_AND_SEQ_NUM = -1;
 static int HF_PCIE_DLLP_ACK_NAK_RESERVED = -1;
 static int HF_PCIE_DLLP_ACK_NAK_SEQ_NUM = -1;
+static int HF_PCIE_DLLP_FEATURE_ACK_AND_SUPPORT = -1;
+static int HF_PCIE_DLLP_FEATURE_ACK = -1;
+static int HF_PCIE_DLLP_FEATURE_SUPPORT_LOCAL_SCALED_FLOW_CONTROL = -1;
 static int HF_PCIE_DLLP_PM_RESERVED = -1;
 static int HF_PCIE_DLLP_INIT_UPDATE_FC = -1;
 static int HF_PCIE_DLLP_INIT_UPDATE_FC_HDR_SCALE = -1;
@@ -601,6 +604,24 @@ static hf_register_info HF_PCIE_DLLP[] = {
         { "Ack/Nak Sequence Number", "pcie.dllp.ack_nak.seq",
         FT_UINT24, BASE_DEC,
         NULL, 0x000FFF,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_DLLP_FEATURE_ACK_AND_SUPPORT,
+        { "Feature Support", "pcie.dllp.feature.ack_and_support",
+        FT_NONE, BASE_NONE,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_DLLP_FEATURE_ACK,
+        { "Ack", "pcie.dllp.feature.ack",
+        FT_BOOLEAN, 24,
+        NULL, 0b1 << 23,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_DLLP_FEATURE_SUPPORT_LOCAL_SCALED_FLOW_CONTROL,
+        { "Local Scaled Flow Control Supported", "pcie.dllp.feature.local_scaled_flow_control",
+        FT_BOOLEAN, 24,
+        NULL, 0b1 << 0,
         NULL, HFILL }
     },
     { &HF_PCIE_DLLP_PM_RESERVED,
@@ -933,6 +954,7 @@ static int ETT_PCIE_FRAME = -1;
 static int ETT_PCIE_FRAME_TLP_RESERVED_AND_SEQ = -1;
 static int ETT_PCIE_DLLP = -1;
 static int ETT_PCIE_DLLP_ACK_NAK_RESERVED_AND_SEQ_NUM = -1;
+static int ETT_PCIE_DLLP_FEATURE_ACK_AND_SUPPORT = -1;
 static int ETT_PCIE_DLLP_INIT_UPDATE_FC = -1;
 static int ETT_PCIE_TLP = -1;
 static int ETT_PCIE_TLP_DW0 = -1;
@@ -951,6 +973,7 @@ static int * const ETT[] = {
         &ETT_PCIE_FRAME_TLP_RESERVED_AND_SEQ,
         &ETT_PCIE_DLLP,
         &ETT_PCIE_DLLP_ACK_NAK_RESERVED_AND_SEQ_NUM,
+        &ETT_PCIE_DLLP_FEATURE_ACK_AND_SUPPORT,
         &ETT_PCIE_DLLP_INIT_UPDATE_FC,
         &ETT_PCIE_TLP,
         &ETT_PCIE_TLP_DW0,
@@ -1267,6 +1290,31 @@ static int dissect_pcie_dllp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree
                 uint32_t seq_num;
                 proto_tree_add_item_ret_uint(ack_nak_seq_tree, HF_PCIE_DLLP_ACK_NAK_SEQ_NUM, tvb, 1, 3, ENC_BIG_ENDIAN, &seq_num);
                 proto_item_append_text(ack_nak_seq_tree_item, ": %d", seq_num);
+            }
+            break;
+        case 0b00000010:
+            {
+                proto_item * feature_support_tree_item = proto_tree_add_item(dllp_tree, HF_PCIE_DLLP_FEATURE_ACK_AND_SUPPORT, tvb, 1, 3, ENC_NA);
+                proto_tree * feature_support_tree = proto_item_add_subtree(feature_support_tree_item, ETT_PCIE_DLLP_FEATURE_ACK_AND_SUPPORT);
+
+                gboolean ack = 0;
+                proto_tree_add_item_ret_boolean(feature_support_tree, HF_PCIE_DLLP_FEATURE_ACK, tvb, 1, 3, ENC_BIG_ENDIAN, &ack);
+
+                gboolean local_scaled_flow_control = 0;
+                proto_tree_add_item_ret_boolean(feature_support_tree, HF_PCIE_DLLP_FEATURE_SUPPORT_LOCAL_SCALED_FLOW_CONTROL, tvb, 1, 3, ENC_BIG_ENDIAN, &local_scaled_flow_control);
+
+                if (ack || local_scaled_flow_control) {
+                    proto_item_append_text(feature_support_tree_item, ":");
+                    if (ack) {
+                        proto_item_append_text(feature_support_tree_item, " Ack");
+                    }
+                    if (ack && local_scaled_flow_control) {
+                        proto_item_append_text(feature_support_tree_item, ",");
+                    }
+                    if (local_scaled_flow_control) {
+                        proto_item_append_text(feature_support_tree_item, " Local Scaled Flow Control");
+                    }
+                }
             }
             break;
         default:
