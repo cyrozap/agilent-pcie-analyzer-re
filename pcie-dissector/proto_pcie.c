@@ -1250,6 +1250,30 @@ static int dissect_pcie_frame(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tre
                 }
             }
             break;
+        case K_28_5:
+            if (tvb_get_guint8(tvb, 1) == K_28_0) {
+                // SKP Ordered Set
+                col_set_str(pinfo->cinfo, COL_INFO, "SKP Ordered Set");
+            } else if ((tvb_get_guint8(tvb, 1) == K_28_1) && (tvb_get_guint8(tvb, 2) == K_28_1) && (tvb_get_guint8(tvb, 3) == K_28_1)) {
+                // Fast Training Sequence (FTS)
+                col_set_str(pinfo->cinfo, COL_INFO, "Fast Training Sequence");
+            } else if ((tvb_get_guint8(tvb, 1) == K_28_3) && (tvb_get_guint8(tvb, 2) == K_28_3) && (tvb_get_guint8(tvb, 3) == K_28_3)) {
+                // Electrical Idle Ordered Set (EIOS)
+                col_set_str(pinfo->cinfo, COL_INFO, "Electrical Idle Ordered Set");
+            } else if (tvb_get_guint8(tvb, 1) == K_28_7) {
+                // Electrical Idle Exit Ordered Set (EIEOS)
+                col_set_str(pinfo->cinfo, COL_INFO, "Electrical Idle Exit Ordered Set");
+            } else {
+                // Assume Training Sequence
+                if (tvb_get_guint8(tvb, 6) == 0x4A) {
+                    // TS1 Ordered Set
+                    col_set_str(pinfo->cinfo, COL_INFO, "TS1 Ordered Set");
+                } else if (tvb_get_guint8(tvb, 6) == 0x45) {
+                    // TS2 Ordered Set
+                    col_set_str(pinfo->cinfo, COL_INFO, "TS2 Ordered Set");
+                }
+            }
+            break;
         default:
             break;
     }
