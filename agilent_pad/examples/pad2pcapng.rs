@@ -50,6 +50,20 @@ fn main() {
     let header = pad_file.header;
     println!("{:?}", header);
 
+    // Only PAD files from PCIe analyzer modules are supported.
+    if !matches!(
+        header.module_type.as_str(),
+        "AGT_MODULE_ONEPORT_PCIEXPRESS_X8"
+            | "AGT_MODULE_ONEPORT_PCIEXPRESS_X16"
+            | "AGT_MODULE_ONEPORT_PCIEXPRESS_GEN2"
+            | "AGT_MODULE_ONEPORT_PCIEXPRESS_GEN2_X16"
+            | "AGT_MODULE_ONEPORT_PCIEXPRESS_MRIOV_X8"
+            | "AGT_MODULE_ONEPORT_PCIEXPRESS_MRIOV_X16"
+    ) {
+        eprintln!("Error: Unsupported module type: {}", header.module_type);
+        return;
+    }
+
     let mut pcapng_writer = match File::create(&args.pcapng_file) {
         Ok(f) => BufWriter::new(f),
         Err(error) => {
