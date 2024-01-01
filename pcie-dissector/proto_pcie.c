@@ -83,6 +83,21 @@ static const value_string K_SYMBOLS[] = {
     { 0, NULL },
 };
 
+static const value_string LINK_SPEED[] = {
+    { 0x1, "2.5 GT/s" },
+    { 0x3, "5.0 GT/s" },
+    { 0, NULL },
+};
+
+static const value_string LINK_WIDTH[] = {
+    { 0, "x1" },
+    { 1, "x2" },
+    { 2, "x4" },
+    { 3, "x8" },
+    { 4, "x16" },
+    { 0, NULL },
+};
+
 static const value_string DLLP_TYPE[] = {
     { 0b00000000, "Ack" },
     { 0b00000001, "MRInit" },
@@ -405,9 +420,16 @@ static int HF_PCIE_DATA_COUNT = -1;
 static int HF_PCIE_DATA_VALID = -1;
 static int HF_PCIE_DATA_VALID_COUNT = -1;
 static int HF_PCIE_FLAGS = -1;
+static int HF_PCIE_GAP = -1;
+static int HF_PCIE_SCRAMBLED = -1;
 static int HF_PCIE_DIRECTION = -1;
+static int HF_PCIE_ELECTRICAL_IDLE = -1;
 static int HF_PCIE_DISPARITY_ERROR = -1;
+static int HF_PCIE_CHANNEL_BONDED = -1;
+static int HF_PCIE_LINK_SPEED = -1;
+static int HF_PCIE_START_LANE = -1;
 static int HF_PCIE_SYMBOL_ERROR = -1;
+static int HF_PCIE_LINK_WIDTH = -1;
 
 static int HF_PCIE_FRAME_START_TAG = -1;
 static int HF_PCIE_FRAME_TLP_RESERVED_AND_SEQ = -1;
@@ -522,10 +544,28 @@ static hf_register_info HF_PCIE[] = {
         NULL, 0x0,
         NULL, HFILL }
     },
+    { &HF_PCIE_GAP,
+        { "Gap", "pcie.gap",
+        FT_BOOLEAN, 32,
+        NULL, 0x40000000,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_SCRAMBLED,
+        { "Scrambled", "pcie.scrambled",
+        FT_BOOLEAN, 32,
+        NULL, 0x20000000,
+        NULL, HFILL }
+    },
     { &HF_PCIE_DIRECTION,
         { "Direction", "pcie.direction",
         FT_BOOLEAN, 32,
         TFS(&tfs_direction), 0x10000000,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_ELECTRICAL_IDLE,
+        { "Electrical Idle", "pcie.electrical_idle",
+        FT_UINT32, BASE_HEX,
+        NULL, 0x0FFFF000,
         NULL, HFILL }
     },
     { &HF_PCIE_DISPARITY_ERROR,
@@ -534,10 +574,34 @@ static hf_register_info HF_PCIE[] = {
         NULL, 0x00000800,
         NULL, HFILL }
     },
+    { &HF_PCIE_CHANNEL_BONDED,
+        { "Channel Bonded", "pcie.channel_bonded",
+        FT_BOOLEAN, 32,
+        NULL, 0x00000400,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_LINK_SPEED,
+        { "Link Speed", "pcie.link_speed",
+        FT_UINT32, BASE_HEX,
+        VALS(LINK_SPEED), 0x00000300,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_START_LANE,
+        { "Start Lane", "pcie.start_lane",
+        FT_UINT32, BASE_DEC,
+        NULL, 0x000000F0,
+        NULL, HFILL }
+    },
     { &HF_PCIE_SYMBOL_ERROR,
         { "Symbol Error", "pcie.symbol_error",
         FT_BOOLEAN, 32,
         NULL, 0x00000008,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_LINK_WIDTH,
+        { "Link Width", "pcie.link_width",
+        FT_UINT32, BASE_DEC,
+        VALS(LINK_WIDTH), 0x00000007,
         NULL, HFILL }
     },
 };
@@ -1135,14 +1199,40 @@ static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
     proto_item * flags_tree_item = proto_tree_add_item(pcie_tree, HF_PCIE_FLAGS, tvb, 16, 4, ENC_NA);
     proto_tree * flags_tree = proto_item_add_subtree(flags_tree_item, ETT_PCIE_FLAGS);
 
+    proto_tree_add_item(flags_tree, HF_PCIE_GAP, tvb, 16, 4, ENC_LITTLE_ENDIAN);
+
+    proto_tree_add_item(flags_tree, HF_PCIE_SCRAMBLED, tvb, 16, 4, ENC_LITTLE_ENDIAN);
+
     gboolean direction = 0;
     proto_tree_add_item_ret_boolean(flags_tree, HF_PCIE_DIRECTION, tvb, 16, 4, ENC_LITTLE_ENDIAN, &direction);
+
+    proto_tree_add_item(flags_tree, HF_PCIE_ELECTRICAL_IDLE, tvb, 16, 4, ENC_LITTLE_ENDIAN);
+
     gboolean disparity_error = 0;
     proto_item * disparity_error_item = proto_tree_add_item_ret_boolean(flags_tree, HF_PCIE_DISPARITY_ERROR, tvb, 16, 4, ENC_LITTLE_ENDIAN, &disparity_error);
+
+    proto_tree_add_item(flags_tree, HF_PCIE_CHANNEL_BONDED, tvb, 16, 4, ENC_LITTLE_ENDIAN);
+
+    uint32_t link_speed = 0;
+    proto_tree_add_item_ret_uint(flags_tree, HF_PCIE_LINK_SPEED, tvb, 16, 4, ENC_LITTLE_ENDIAN, &link_speed);
+
+    proto_tree_add_item(flags_tree, HF_PCIE_START_LANE, tvb, 16, 4, ENC_LITTLE_ENDIAN);
+
     gboolean symbol_error = 0;
     proto_item * symbol_error_item = proto_tree_add_item_ret_boolean(flags_tree, HF_PCIE_SYMBOL_ERROR, tvb, 16, 4, ENC_LITTLE_ENDIAN, &symbol_error);
 
+    uint32_t link_width = 0;
+    proto_tree_add_item_ret_uint(flags_tree, HF_PCIE_LINK_WIDTH, tvb, 16, 4, ENC_LITTLE_ENDIAN, &link_width);
+
     proto_item_append_text(flags_tree_item, ": %s", direction ? "Upstream" : "Downstream");
+    const char * link_speed_str = try_val_to_str(link_speed, LINK_SPEED);
+    if (link_speed_str != NULL) {
+        proto_item_append_text(flags_tree_item, ", %s", link_speed_str);
+    }
+    const char * link_width_str = try_val_to_str(link_width, LINK_WIDTH);
+    if (link_width_str != NULL) {
+        proto_item_append_text(flags_tree_item, ", %s", link_width_str);
+    }
     if (disparity_error) {
         proto_item_append_text(flags_tree_item, ", Disparity Error");
         expert_add_info(pinfo, disparity_error_item, &EI_PCIE_DISPARITY_ERROR);

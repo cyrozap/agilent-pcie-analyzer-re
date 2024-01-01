@@ -117,9 +117,17 @@ types:
       - id: flags
         type: u4le
         doc: >
+          Bits 2:0: Link width. 0: x1, 1: x2, 2: x4, 3: x8, 4: x16
           Bit 3: Symbol error.
+          Bits 7:4: Start lane.
+          Bit 8: Link speed valid.
+          Bit 9: Link speed. 5.0 GT/s (1), not 2.5 GT/s (0).
+          Bit 10: Channel bonded.
           Bit 11: Disparity error.
+          Bits 27:12: Bitfield of lanes in electrical idle.
           Bit 28: Upstream (1), not Downstream (0).
+          Bit 29: Scrambled.
+          Bit 30: Gap (unconsumed data is present).
       - id: data_offset
         type: u8le_split
         doc: "The offset of this record's data relative to `record_data_offset`."
