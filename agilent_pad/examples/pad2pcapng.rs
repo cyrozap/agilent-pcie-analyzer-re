@@ -75,14 +75,14 @@ fn main() {
     // Section Header Block
     {
         pcapng_writer
-            .write_all(&(0x0a0d0d0a as u32).to_le_bytes())
+            .write_all(&0x0a0d0d0a_u32.to_le_bytes())
             .unwrap();
 
         let mut sh_data: Vec<u8> = Vec::new();
-        sh_data.append(&mut (0x1a2b3c4d as u32).to_le_bytes().to_vec());
-        sh_data.append(&mut (0x0001 as u16).to_le_bytes().to_vec());
-        sh_data.append(&mut (0x0000 as u16).to_le_bytes().to_vec());
-        sh_data.append(&mut (-1 as i64).to_le_bytes().to_vec());
+        sh_data.append(&mut 0x1a2b3c4d_u32.to_le_bytes().to_vec());
+        sh_data.append(&mut 0x0001_u16.to_le_bytes().to_vec());
+        sh_data.append(&mut 0x0000_u16.to_le_bytes().to_vec());
+        sh_data.append(&mut (-1_i64).to_le_bytes().to_vec());
 
         let sh_len: u32 = <usize as TryInto<u32>>::try_into(sh_data.len()).unwrap() + 4 * 3;
         pcapng_writer.write_all(&sh_len.to_le_bytes()).unwrap();
@@ -93,17 +93,17 @@ fn main() {
     // Interface Description Block
     {
         pcapng_writer
-            .write_all(&(0x00000001 as u32).to_le_bytes())
+            .write_all(&0x00000001_u32.to_le_bytes())
             .unwrap();
 
         let mut if_data: Vec<u8> = Vec::new();
-        if_data.append(&mut (147 + 11 as u16).to_le_bytes().to_vec());
-        if_data.append(&mut (0x0000 as u16).to_le_bytes().to_vec());
-        if_data.append(&mut (0 as u32).to_le_bytes().to_vec());
+        if_data.append(&mut (147 + 11_u16).to_le_bytes().to_vec());
+        if_data.append(&mut 0x0000_u16.to_le_bytes().to_vec());
+        if_data.append(&mut 0_u32.to_le_bytes().to_vec());
 
         // Options
         let mut if_name = header.port_id.clone().into_bytes();
-        if_data.append(&mut (2 as u16).to_le_bytes().to_vec());
+        if_data.append(&mut 2_u16.to_le_bytes().to_vec());
         if_data.append(
             &mut <usize as TryInto<u16>>::try_into(if_name.len())
                 .unwrap()
@@ -126,12 +126,12 @@ fn main() {
         if_data.append(&mut (2e9 as u64).to_le_bytes().to_vec());
         */
 
-        if_data.append(&mut (9 as u16).to_le_bytes().to_vec());
-        if_data.append(&mut (1 as u16).to_le_bytes().to_vec());
-        if_data.append(&mut (9 as u32).to_le_bytes().to_vec());
+        if_data.append(&mut 9_u16.to_le_bytes().to_vec());
+        if_data.append(&mut 1_u16.to_le_bytes().to_vec());
+        if_data.append(&mut 9_u32.to_le_bytes().to_vec());
 
         let mut if_hardware = header.module_type.clone().into_bytes();
-        if_data.append(&mut (15 as u16).to_le_bytes().to_vec());
+        if_data.append(&mut 15_u16.to_le_bytes().to_vec());
         if_data.append(
             &mut <usize as TryInto<u16>>::try_into(if_hardware.len())
                 .unwrap()
@@ -148,8 +148,8 @@ fn main() {
             if_data.push(0);
         }
 
-        if_data.append(&mut (0 as u16).to_le_bytes().to_vec());
-        if_data.append(&mut (0 as u16).to_le_bytes().to_vec());
+        if_data.append(&mut 0_u16.to_le_bytes().to_vec());
+        if_data.append(&mut 0_u16.to_le_bytes().to_vec());
 
         let if_len: u32 = <usize as TryInto<u32>>::try_into(if_data.len()).unwrap() + 4 * 3;
         pcapng_writer.write_all(&if_len.to_le_bytes()).unwrap();
@@ -165,11 +165,11 @@ fn main() {
         // Enhanced Packet Block
         {
             pcapng_writer
-                .write_all(&(0x00000006 as u32).to_le_bytes())
+                .write_all(&0x00000006_u32.to_le_bytes())
                 .unwrap();
 
             let mut block_data: Vec<u8> = Vec::new();
-            block_data.append(&mut (0 as u32).to_le_bytes().to_vec());
+            block_data.append(&mut 0_u32.to_le_bytes().to_vec());
             block_data.append(
                 &mut <u64 as TryInto<u32>>::try_into(record.timestamp_ns.checked_shr(32).unwrap())
                     .unwrap()
@@ -232,7 +232,7 @@ fn main() {
                     )
                 }
                 .into_bytes();
-                block_data.append(&mut (1 as u16).to_le_bytes().to_vec());
+                block_data.append(&mut 1_u16.to_le_bytes().to_vec());
                 block_data.append(
                     &mut <usize as TryInto<u16>>::try_into(packet_comment.len())
                         .unwrap()
@@ -249,8 +249,8 @@ fn main() {
                     block_data.push(0);
                 }
 
-                block_data.append(&mut (0 as u16).to_le_bytes().to_vec());
-                block_data.append(&mut (0 as u16).to_le_bytes().to_vec());
+                block_data.append(&mut 0_u16.to_le_bytes().to_vec());
+                block_data.append(&mut 0_u16.to_le_bytes().to_vec());
             }
 
             let block_len: u32 =
