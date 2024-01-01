@@ -1253,7 +1253,7 @@ static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
     }
 
     tvbuff_t * frame_tvb;
-    if (data_valid) {
+    if (data_valid_count > 0) {
         frame_tvb = tvb_new_subset_length(tvb, PCIE_CAPTURE_HEADER_SIZE, data_valid_count);
     } else {
         frame_tvb = tvb_new_subset_remaining(tvb, PCIE_CAPTURE_HEADER_SIZE);
