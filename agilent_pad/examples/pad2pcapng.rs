@@ -18,6 +18,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::cmp::Ordering;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufWriter;
@@ -212,26 +213,29 @@ fn main() {
                 || (record.number == header.last_record_number
                     && header.trigger_record_number > header.last_record_number)
             {
-                let mut packet_comment = if header.timestamps_ns.trigger < record.timestamp_ns {
-                    let difference_ns = record.timestamp_ns - header.timestamps_ns.trigger;
-                    let ts_ns_int = difference_ns / 1000000000;
-                    let ts_ns_frac = difference_ns % 1000000000;
-                    format!(
-                        "Triggered {}.{:09}s before this record.",
-                        ts_ns_int, ts_ns_frac
-                    )
-                } else if header.timestamps_ns.trigger == record.timestamp_ns {
-                    "Triggered on this record.".to_string()
-                } else {
-                    let difference_ns = header.timestamps_ns.trigger - record.timestamp_ns;
-                    let ts_ns_int = difference_ns / 1000000000;
-                    let ts_ns_frac = difference_ns % 1000000000;
-                    format!(
-                        "Triggered {}.{:09}s after this record.",
-                        ts_ns_int, ts_ns_frac
-                    )
-                }
-                .into_bytes();
+                let mut packet_comment =
+                    match header.timestamps_ns.trigger.cmp(&record.timestamp_ns) {
+                        Ordering::Less => {
+                            let difference_ns = record.timestamp_ns - header.timestamps_ns.trigger;
+                            let ts_ns_int = difference_ns / 1000000000;
+                            let ts_ns_frac = difference_ns % 1000000000;
+                            format!(
+                                "Triggered {}.{:09}s before this record.",
+                                ts_ns_int, ts_ns_frac
+                            )
+                        }
+                        Ordering::Equal => "Triggered on this record.".to_string(),
+                        Ordering::Greater => {
+                            let difference_ns = header.timestamps_ns.trigger - record.timestamp_ns;
+                            let ts_ns_int = difference_ns / 1000000000;
+                            let ts_ns_frac = difference_ns % 1000000000;
+                            format!(
+                                "Triggered {}.{:09}s after this record.",
+                                ts_ns_int, ts_ns_frac
+                            )
+                        }
+                    }
+                    .into_bytes();
                 block_data.append(&mut 1_u16.to_le_bytes().to_vec());
                 block_data.append(
                     &mut <usize as TryInto<u16>>::try_into(packet_comment.len())
