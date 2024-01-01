@@ -2,7 +2,7 @@
 
 /*
  *  pad2pcapng.rs - Convert Agilent PAD files to PCAP-NG.
- *  Copyright (C) 2023  Forest Crossman <cyrozap@gmail.com>
+ *  Copyright (C) 2023-2024  Forest Crossman <cyrozap@gmail.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -176,8 +176,7 @@ fn main() {
             // Record metadata
             block_data.append(&mut record.number.to_le_bytes().to_vec());
             block_data.append(&mut record.timestamp_ns.to_le_bytes().to_vec());
-            block_data.push(record.unk3[0]);
-            block_data.push(record.unk3[1]);
+            block_data.append(&mut record.lfsr.to_le_bytes().to_vec());
             let value: u16 = if record.data_valid { 0x8000 } else { 0 } | record.data_valid_count;
             block_data.append(&mut value.to_le_bytes().to_vec());
             block_data.append(&mut record.flags.to_le_bytes().to_vec());

@@ -109,8 +109,9 @@ types:
       - id: timestamp_ns
         type: u8le_split
         doc: "The relative timestamp this record was captured at."
-      - id: unk3
-        size: 2
+      - id: lfsr
+        type: u2le
+        doc: "The state of the scrambling LFSR at the time this record was captured. Used for restoring the 10-bit symbol data."
       - id: bytes_valid
         type: u2le
         doc: "Bits [14:0]: The length of the sequence of valid bytes in the record data, starting from the first byte. Bit [15]: Unknown."

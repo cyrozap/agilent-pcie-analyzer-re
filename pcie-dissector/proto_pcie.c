@@ -2,7 +2,7 @@
 
 /*
  *  proto_pcie.c - PCIe dissector for Wireshark.
- *  Copyright (C) 2023  Forest Crossman <cyrozap@gmail.com>
+ *  Copyright (C) 2023-2024  Forest Crossman <cyrozap@gmail.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -415,7 +415,7 @@ static int PROTO_PCIE_TLP = -1;
 
 static int HF_PCIE_RECORD = -1;
 static int HF_PCIE_TIMESTAMP_NS = -1;
-static int HF_PCIE_UNK = -1;
+static int HF_PCIE_LFSR = -1;
 static int HF_PCIE_DATA_COUNT = -1;
 static int HF_PCIE_DATA_VALID = -1;
 static int HF_PCIE_DATA_VALID_COUNT = -1;
@@ -514,8 +514,8 @@ static hf_register_info HF_PCIE[] = {
         NULL, 0x0,
         NULL, HFILL }
     },
-    { &HF_PCIE_UNK,
-        { "Unknown", "pcie.unk",
+    { &HF_PCIE_LFSR,
+        { "LFSR", "pcie.lfsr",
         FT_UINT16, BASE_HEX,
         NULL, 0x0,
         NULL, HFILL }
@@ -1180,7 +1180,7 @@ static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
     proto_tree * pcie_tree = proto_item_add_subtree(pcie_tree_item, ETT_PCIE);
     proto_tree_add_item(pcie_tree, HF_PCIE_RECORD, tvb, 0, 4, ENC_LITTLE_ENDIAN);
     proto_tree_add_item(pcie_tree, HF_PCIE_TIMESTAMP_NS, tvb, 4, 8, ENC_LITTLE_ENDIAN);
-    proto_tree_add_item(pcie_tree, HF_PCIE_UNK, tvb, 12, 2, ENC_LITTLE_ENDIAN);
+    proto_tree_add_item(pcie_tree, HF_PCIE_LFSR, tvb, 12, 2, ENC_LITTLE_ENDIAN);
 
     proto_item * data_count_tree_item = proto_tree_add_item(pcie_tree, HF_PCIE_DATA_COUNT, tvb, 14, 2, ENC_NA);
     proto_tree * data_count_tree = proto_item_add_subtree(data_count_tree_item, ETT_PCIE_DATA_COUNT);

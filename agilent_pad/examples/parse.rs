@@ -2,7 +2,7 @@
 
 /*
  *  parse.rs - Parser demo for Agilent PAD files.
- *  Copyright (C) 2023  Forest Crossman <cyrozap@gmail.com>
+ *  Copyright (C) 2023-2024  Forest Crossman <cyrozap@gmail.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -95,10 +95,9 @@ fn main() {
         };
 
         let debug_data = format!(
-            " (count: {}, unk3: {:02x}{:02x}, bytes_valid: {} ({}), flags: 0x{:08x}, data_offset: {})",
+            " (count: {}, lfsr: 0x{:04x}, bytes_valid: {} ({}), flags: 0x{:08x}, data_offset: {})",
             record.count,
-            record.unk3[0],
-            record.unk3[1],
+            record.lfsr,
             record.data_valid_count,
             match record.data_valid {
                 true => 1,
