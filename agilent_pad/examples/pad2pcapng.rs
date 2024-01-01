@@ -117,9 +117,7 @@ fn main() {
         } else {
             0
         };
-        for _ in 0..padding_count {
-            if_data.push(0);
-        }
+        if_data.resize(if_data.len() + padding_count, 0);
 
         /*
         if_data.append(&mut (8 as u16).to_le_bytes().to_vec());
@@ -145,9 +143,7 @@ fn main() {
         } else {
             0
         };
-        for _ in 0..padding_count {
-            if_data.push(0);
-        }
+        if_data.resize(if_data.len() + padding_count, 0);
 
         if_data.append(&mut 0_u16.to_le_bytes().to_vec());
         if_data.append(&mut 0_u16.to_le_bytes().to_vec());
@@ -203,9 +199,7 @@ fn main() {
             } else {
                 0
             };
-            for _ in 0..padding_count {
-                block_data.push(0);
-            }
+            block_data.resize(block_data.len() + padding_count, 0);
 
             if (record.number == header.trigger_record_number)
                 || (record.number == header.first_record_number
@@ -249,9 +243,7 @@ fn main() {
                 } else {
                     0
                 };
-                for _ in 0..padding_count {
-                    block_data.push(0);
-                }
+                block_data.resize(block_data.len() + padding_count, 0);
 
                 block_data.append(&mut 0_u16.to_le_bytes().to_vec());
                 block_data.append(&mut 0_u16.to_le_bytes().to_vec());
