@@ -430,6 +430,10 @@ static int HF_PCIE_LINK_SPEED = -1;
 static int HF_PCIE_START_LANE = -1;
 static int HF_PCIE_SYMBOL_ERROR = -1;
 static int HF_PCIE_LINK_WIDTH = -1;
+static int HF_PCIE_8B10B_META = -1;
+static int HF_PCIE_8B10B_META_BLOCK = -1;
+static int HF_PCIE_8B10B_META_BLOCK_K_SYMBOLS = -1;
+static int HF_PCIE_8B10B_META_BLOCK_DISPARITY_POLARITY = -1;
 
 static int HF_PCIE_FRAME_START_TAG = -1;
 static int HF_PCIE_FRAME_TLP_RESERVED_AND_SEQ = -1;
@@ -602,6 +606,30 @@ static hf_register_info HF_PCIE[] = {
         { "Link Width", "pcie.link_width",
         FT_UINT32, BASE_DEC,
         VALS(LINK_WIDTH), 0x00000007,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_8B10B_META,
+        { "8b/10b Metadata", "pcie.8b10b_meta",
+        FT_BYTES, BASE_NONE,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_8B10B_META_BLOCK,
+        { "Metadata Block", "pcie.8b10b_meta.block",
+        FT_BYTES, BASE_NONE,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_8B10B_META_BLOCK_K_SYMBOLS,
+        { "K Symbols", "pcie.8b10b_meta.block.k_symbols",
+        FT_UINT8, BASE_HEX,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_8B10B_META_BLOCK_DISPARITY_POLARITY,
+        { "Disparity Polarity", "pcie.8b10b_meta.block.disparity_polarity",
+        FT_UINT8, BASE_HEX,
+        NULL, 0x0,
         NULL, HFILL }
     },
 };
@@ -1014,6 +1042,8 @@ static hf_register_info HF_PCIE_TLP[] = {
 static int ETT_PCIE = -1;
 static int ETT_PCIE_DATA_COUNT = -1;
 static int ETT_PCIE_FLAGS = -1;
+static int ETT_PCIE_8B10B_META = -1;
+static int ETT_PCIE_8B10B_META_BLOCK = -1;
 static int ETT_PCIE_FRAME = -1;
 static int ETT_PCIE_FRAME_TLP_RESERVED_AND_SEQ = -1;
 static int ETT_PCIE_DLLP = -1;
@@ -1033,6 +1063,8 @@ static int * const ETT[] = {
         &ETT_PCIE,
         &ETT_PCIE_DATA_COUNT,
         &ETT_PCIE_FLAGS,
+        &ETT_PCIE_8B10B_META,
+        &ETT_PCIE_8B10B_META_BLOCK,
         &ETT_PCIE_FRAME,
         &ETT_PCIE_FRAME_TLP_RESERVED_AND_SEQ,
         &ETT_PCIE_DLLP,
@@ -1256,6 +1288,20 @@ static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
     tvbuff_t * frame_tvb;
     if (data_valid_count > 0) {
         frame_tvb = tvb_new_subset_length(tvb, PCIE_CAPTURE_HEADER_SIZE, data_valid_count);
+
+        int meta_len = 2 * ((data_valid_count + (8 - 1)) / 8);
+        if (PCIE_CAPTURE_HEADER_SIZE + data_valid_count + meta_len <= tvb_captured_length(tvb)) {
+            proto_item * meta_tree_item = proto_tree_add_item(pcie_tree, HF_PCIE_8B10B_META, tvb, PCIE_CAPTURE_HEADER_SIZE + data_valid_count, meta_len, ENC_NA);
+            proto_tree * meta_tree = proto_item_add_subtree(meta_tree_item, ETT_PCIE_8B10B_META);
+
+            for (int offset = 0; offset < meta_len; offset += 2) {
+                proto_item * meta_block_tree_item = proto_tree_add_item(meta_tree, HF_PCIE_8B10B_META_BLOCK, tvb, PCIE_CAPTURE_HEADER_SIZE + data_valid_count + offset, 2, ENC_NA);
+                proto_tree * meta_block_tree = proto_item_add_subtree(meta_block_tree_item, ETT_PCIE_8B10B_META_BLOCK);
+
+                proto_tree_add_item(meta_block_tree, HF_PCIE_8B10B_META_BLOCK_K_SYMBOLS, tvb, PCIE_CAPTURE_HEADER_SIZE + data_valid_count + offset, 1, ENC_LITTLE_ENDIAN);
+                proto_tree_add_item(meta_block_tree, HF_PCIE_8B10B_META_BLOCK_DISPARITY_POLARITY, tvb, PCIE_CAPTURE_HEADER_SIZE + data_valid_count + offset + 1, 1, ENC_LITTLE_ENDIAN);
+            }
+        }
     } else {
         frame_tvb = tvb_new_subset_remaining(tvb, PCIE_CAPTURE_HEADER_SIZE);
     }
