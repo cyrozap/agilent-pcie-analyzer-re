@@ -1180,20 +1180,21 @@ static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
     proto_tree * pcie_tree = proto_item_add_subtree(pcie_tree_item, ETT_PCIE);
     proto_tree_add_item(pcie_tree, HF_PCIE_RECORD, tvb, 0, 4, ENC_LITTLE_ENDIAN);
     proto_tree_add_item(pcie_tree, HF_PCIE_TIMESTAMP_NS, tvb, 4, 8, ENC_LITTLE_ENDIAN);
-    proto_tree_add_item(pcie_tree, HF_PCIE_LFSR, tvb, 12, 2, ENC_LITTLE_ENDIAN);
-
-    proto_item * data_count_tree_item = proto_tree_add_item(pcie_tree, HF_PCIE_DATA_COUNT, tvb, 14, 2, ENC_NA);
-    proto_tree * data_count_tree = proto_item_add_subtree(data_count_tree_item, ETT_PCIE_DATA_COUNT);
-
-    gboolean data_valid = false;
-    proto_tree_add_item_ret_boolean(data_count_tree, HF_PCIE_DATA_VALID, tvb, 14, 2, ENC_LITTLE_ENDIAN, &data_valid);
 
     uint32_t data_valid_count = 0;
-    proto_tree_add_item_ret_uint(data_count_tree, HF_PCIE_DATA_VALID_COUNT, tvb, 14, 2, ENC_LITTLE_ENDIAN, &data_valid_count);
+    if (tvb_get_letohl(tvb, 12) != 0) {
+        proto_tree_add_item(pcie_tree, HF_PCIE_LFSR, tvb, 12, 2, ENC_LITTLE_ENDIAN);
 
-    proto_item_append_text(data_count_tree_item, ": %d", data_valid_count);
-    if (data_valid) {
-        proto_item_append_text(data_count_tree_item, " (Valid)");
+        proto_item * data_count_tree_item = proto_tree_add_item(pcie_tree, HF_PCIE_DATA_COUNT, tvb, 14, 2, ENC_NA);
+        proto_tree * data_count_tree = proto_item_add_subtree(data_count_tree_item, ETT_PCIE_DATA_COUNT);
+
+        gboolean data_valid = false;
+        proto_tree_add_item_ret_boolean(data_count_tree, HF_PCIE_DATA_VALID, tvb, 14, 2, ENC_LITTLE_ENDIAN, &data_valid);
+        proto_tree_add_item_ret_uint(data_count_tree, HF_PCIE_DATA_VALID_COUNT, tvb, 14, 2, ENC_LITTLE_ENDIAN, &data_valid_count);
+        proto_item_append_text(data_count_tree_item, ": %d", data_valid_count);
+        if (data_valid) {
+            proto_item_append_text(data_count_tree_item, " (Valid)");
+        }
     }
 
     proto_item * flags_tree_item = proto_tree_add_item(pcie_tree, HF_PCIE_FLAGS, tvb, 16, 4, ENC_NA);
