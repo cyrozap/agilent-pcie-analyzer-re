@@ -98,6 +98,18 @@ static const value_string LINK_WIDTH[] = {
     { 0, NULL },
 };
 
+static const value_string ORDERED_SETS[] = {
+    { K_28_0, "SKP Ordered Set" },
+    { K_28_1, "Fast Training Sequence" },
+    { K_28_3, "Electrical Idle Ordered Set" },
+    { K_28_7, "Electrical Idle Exit Ordered Set" },
+    { 0x4A, "TS1 Ordered Set" },
+    { 0x45, "TS2 Ordered Set" },
+    { 0xB5, "TS1 Ordered Set (Lane polarity inversion)" },
+    { 0xBA, "TS2 Ordered Set (Lane polarity inversion)" },
+    { 0, NULL },
+};
+
 static const value_string DLLP_TYPE[] = {
     { 0b00000000, "Ack" },
     { 0b00000001, "MRInit" },
@@ -436,6 +448,7 @@ static int HF_PCIE_8B10B_META_BLOCK_K_SYMBOLS = -1;
 static int HF_PCIE_8B10B_META_BLOCK_DISPARITY_POLARITY = -1;
 
 static int HF_PCIE_FRAME_START_TAG = -1;
+static int HF_PCIE_FRAME_ORDERED_SET_TYPE = -1;
 static int HF_PCIE_FRAME_TLP_RESERVED_AND_SEQ = -1;
 static int HF_PCIE_FRAME_TLP_RESERVED = -1;
 static int HF_PCIE_FRAME_TLP_SEQ = -1;
@@ -639,6 +652,12 @@ static hf_register_info HF_PCIE_FRAME[] = {
         { "Start Tag", "pcie.frame.start_tag",
         FT_UINT8, BASE_HEX,
         VALS(K_SYMBOLS), 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_FRAME_ORDERED_SET_TYPE,
+        { "Ordered Set Type", "pcie.frame.ordered_set.type",
+        FT_UINT8, BASE_HEX,
+        VALS(ORDERED_SETS), 0x0,
         NULL, HFILL }
     },
     { &HF_PCIE_FRAME_TLP_RESERVED_AND_SEQ,
@@ -1391,23 +1410,27 @@ static int dissect_pcie_frame(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tre
             if (tvb_get_guint8(tvb, 1) == K_28_0) {
                 // SKP Ordered Set
                 col_set_str(pinfo->cinfo, COL_INFO, "SKP Ordered Set");
+                proto_tree_add_item(frame_tree, HF_PCIE_FRAME_ORDERED_SET_TYPE, tvb, 1, 1, ENC_BIG_ENDIAN);
             } else if ((tvb_get_guint8(tvb, 1) == K_28_1) && (tvb_get_guint8(tvb, 2) == K_28_1) && (tvb_get_guint8(tvb, 3) == K_28_1)) {
                 // Fast Training Sequence (FTS)
                 col_set_str(pinfo->cinfo, COL_INFO, "Fast Training Sequence");
+                proto_tree_add_item(frame_tree, HF_PCIE_FRAME_ORDERED_SET_TYPE, tvb, 1, 1, ENC_BIG_ENDIAN);
             } else if ((tvb_get_guint8(tvb, 1) == K_28_3) && (tvb_get_guint8(tvb, 2) == K_28_3) && (tvb_get_guint8(tvb, 3) == K_28_3)) {
                 // Electrical Idle Ordered Set (EIOS)
                 col_set_str(pinfo->cinfo, COL_INFO, "Electrical Idle Ordered Set");
+                proto_tree_add_item(frame_tree, HF_PCIE_FRAME_ORDERED_SET_TYPE, tvb, 1, 1, ENC_BIG_ENDIAN);
             } else if (tvb_get_guint8(tvb, 1) == K_28_7) {
                 // Electrical Idle Exit Ordered Set (EIEOS)
                 col_set_str(pinfo->cinfo, COL_INFO, "Electrical Idle Exit Ordered Set");
+                proto_tree_add_item(frame_tree, HF_PCIE_FRAME_ORDERED_SET_TYPE, tvb, 1, 1, ENC_BIG_ENDIAN);
             } else {
                 // Assume Training Sequence
-                if (tvb_get_guint8(tvb, 6) == 0x4A) {
-                    // TS1 Ordered Set
-                    col_set_str(pinfo->cinfo, COL_INFO, "TS1 Ordered Set");
-                } else if (tvb_get_guint8(tvb, 6) == 0x45) {
-                    // TS2 Ordered Set
-                    col_set_str(pinfo->cinfo, COL_INFO, "TS2 Ordered Set");
+                uint32_t ts_type = tvb_get_guint8(tvb, 6);
+                if ((ts_type == 0x4A) || (ts_type == 0xB5) || (ts_type == 0x45) || (ts_type == 0xBA)) {
+                    // TS1/TS2 Ordered Set
+                    uint32_t os_type = 0;
+                    proto_tree_add_item_ret_uint(frame_tree, HF_PCIE_FRAME_ORDERED_SET_TYPE, tvb, 6, 1, ENC_BIG_ENDIAN, &os_type);
+                    col_append_fstr(pinfo->cinfo, COL_INFO, "%s", try_val_to_str(os_type, ORDERED_SETS));
                 }
             }
             break;
