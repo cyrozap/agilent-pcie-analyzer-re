@@ -1677,10 +1677,31 @@ static int dissect_pcie_dllp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree
                 proto_item * init_update_fc_tree_item = proto_tree_add_item(dllp_tree, HF_PCIE_DLLP_INIT_UPDATE_FC, tvb, 1, 3, ENC_NA);
                 proto_tree * init_update_fc_tree = proto_item_add_subtree(init_update_fc_tree_item, ETT_PCIE_DLLP_INIT_UPDATE_FC);
 
-                proto_tree_add_item(init_update_fc_tree, HF_PCIE_DLLP_INIT_UPDATE_FC_HDR_SCALE, tvb, 1, 3, ENC_BIG_ENDIAN);
-                proto_tree_add_item(init_update_fc_tree, HF_PCIE_DLLP_INIT_UPDATE_FC_HDR_FC, tvb, 1, 3, ENC_BIG_ENDIAN);
-                proto_tree_add_item(init_update_fc_tree, HF_PCIE_DLLP_INIT_UPDATE_FC_DATA_SCALE, tvb, 1, 3, ENC_BIG_ENDIAN);
-                proto_tree_add_item(init_update_fc_tree, HF_PCIE_DLLP_INIT_UPDATE_FC_DATA_FC, tvb, 1, 3, ENC_BIG_ENDIAN);
+                uint32_t hdr_scale = 0;
+                proto_tree_add_item_ret_uint(init_update_fc_tree, HF_PCIE_DLLP_INIT_UPDATE_FC_HDR_SCALE, tvb, 1, 3, ENC_BIG_ENDIAN, &hdr_scale);
+                uint32_t hdr_fc = 0;
+                proto_tree_add_item_ret_uint(init_update_fc_tree, HF_PCIE_DLLP_INIT_UPDATE_FC_HDR_FC, tvb, 1, 3, ENC_BIG_ENDIAN, &hdr_fc);
+                uint32_t data_scale = 0;
+                proto_tree_add_item_ret_uint(init_update_fc_tree, HF_PCIE_DLLP_INIT_UPDATE_FC_DATA_SCALE, tvb, 1, 3, ENC_BIG_ENDIAN, &data_scale);
+                uint32_t data_fc = 0;
+                proto_tree_add_item_ret_uint(init_update_fc_tree, HF_PCIE_DLLP_INIT_UPDATE_FC_DATA_FC, tvb, 1, 3, ENC_BIG_ENDIAN, &data_fc);
+
+                uint32_t hdr_fc_scaled = hdr_fc;
+                if (hdr_scale == 2) {
+                    hdr_fc_scaled *= 4;
+                } else if (hdr_scale == 3) {
+                    hdr_fc_scaled *= 16;
+                }
+
+                uint32_t data_fc_scaled = data_fc;
+                if (data_scale == 2) {
+                    data_fc_scaled *= 4;
+                } else if (data_scale == 3) {
+                    data_fc_scaled *= 16;
+                }
+
+                proto_item_append_text(init_update_fc_tree_item, ": HdrFC %d, DataFC %d", hdr_fc_scaled, data_fc_scaled);
+                col_append_fstr(pinfo->cinfo, COL_INFO, ", HdrFC: %d, DataFC: %d", hdr_fc_scaled, data_fc_scaled);
             }
             break;
     }
