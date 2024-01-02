@@ -445,9 +445,9 @@ static int PROTO_PCIE_TLP = -1;
 static int HF_PCIE_RECORD = -1;
 static int HF_PCIE_TIMESTAMP_NS = -1;
 static int HF_PCIE_LFSR = -1;
-static int HF_PCIE_DATA_COUNT = -1;
-static int HF_PCIE_DATA_VALID = -1;
-static int HF_PCIE_DATA_VALID_COUNT = -1;
+static int HF_PCIE_METADATA_INFO = -1;
+static int HF_PCIE_METADATA_INFO_EXTRA_METADATA_PRESENT = -1;
+static int HF_PCIE_METADATA_INFO_METADATA_OFFSET = -1;
 static int HF_PCIE_FLAGS = -1;
 static int HF_PCIE_GAP = -1;
 static int HF_PCIE_SCRAMBLED = -1;
@@ -570,20 +570,20 @@ static hf_register_info HF_PCIE[] = {
         NULL, 0x0,
         NULL, HFILL }
     },
-    { &HF_PCIE_DATA_COUNT,
-        { "Data Count", "pcie.data_count",
+    { &HF_PCIE_METADATA_INFO,
+        { "Metadata Info", "pcie.metadata_info",
         FT_NONE, BASE_NONE,
         NULL, 0x0,
         NULL, HFILL }
     },
-    { &HF_PCIE_DATA_VALID,
-        { "Data Valid", "pcie.data_valid",
+    { &HF_PCIE_METADATA_INFO_EXTRA_METADATA_PRESENT,
+        { "Extra Metadata Present", "pcie.metadata_info.extra_metadata_present",
         FT_BOOLEAN, 16,
         NULL, 0x8000,
         NULL, HFILL }
     },
-    { &HF_PCIE_DATA_VALID_COUNT,
-        { "Data Valid Count", "pcie.data_valid_count",
+    { &HF_PCIE_METADATA_INFO_METADATA_OFFSET,
+        { "Metadata Offset", "pcie.metadata_info.metadata_offset",
         FT_UINT16, BASE_DEC,
         NULL, 0x7FFF,
         NULL, HFILL }
@@ -1188,7 +1188,7 @@ static hf_register_info HF_PCIE_TLP[] = {
 };
 
 static int ETT_PCIE = -1;
-static int ETT_PCIE_DATA_COUNT = -1;
+static int ETT_PCIE_METADATA_INFO = -1;
 static int ETT_PCIE_FLAGS = -1;
 static int ETT_PCIE_8B10B_META = -1;
 static int ETT_PCIE_8B10B_META_BLOCK = -1;
@@ -1211,7 +1211,7 @@ static int ETT_PCIE_TLP_ADDR_PH = -1;
 static int ETT_PCIE_TLP_PAYLOAD = -1;
 static int * const ETT[] = {
         &ETT_PCIE,
-        &ETT_PCIE_DATA_COUNT,
+        &ETT_PCIE_METADATA_INFO,
         &ETT_PCIE_FLAGS,
         &ETT_PCIE_8B10B_META,
         &ETT_PCIE_8B10B_META_BLOCK,
@@ -1365,19 +1365,19 @@ static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
     proto_tree_add_item(pcie_tree, HF_PCIE_RECORD, tvb, 0, 4, ENC_LITTLE_ENDIAN);
     proto_tree_add_item(pcie_tree, HF_PCIE_TIMESTAMP_NS, tvb, 4, 8, ENC_LITTLE_ENDIAN);
 
-    uint32_t data_valid_count = 0;
+    uint32_t metadata_offset = 0;
     if (tvb_get_letohl(tvb, 12) != 0) {
         proto_tree_add_item(pcie_tree, HF_PCIE_LFSR, tvb, 12, 2, ENC_LITTLE_ENDIAN);
 
-        proto_item * data_count_tree_item = proto_tree_add_item(pcie_tree, HF_PCIE_DATA_COUNT, tvb, 14, 2, ENC_NA);
-        proto_tree * data_count_tree = proto_item_add_subtree(data_count_tree_item, ETT_PCIE_DATA_COUNT);
+        proto_item * metadata_info_tree_item = proto_tree_add_item(pcie_tree, HF_PCIE_METADATA_INFO, tvb, 14, 2, ENC_NA);
+        proto_tree * metadata_info_tree = proto_item_add_subtree(metadata_info_tree_item, ETT_PCIE_METADATA_INFO);
 
-        gboolean data_valid = false;
-        proto_tree_add_item_ret_boolean(data_count_tree, HF_PCIE_DATA_VALID, tvb, 14, 2, ENC_LITTLE_ENDIAN, &data_valid);
-        proto_tree_add_item_ret_uint(data_count_tree, HF_PCIE_DATA_VALID_COUNT, tvb, 14, 2, ENC_LITTLE_ENDIAN, &data_valid_count);
-        proto_item_append_text(data_count_tree_item, ": %d", data_valid_count);
-        if (data_valid) {
-            proto_item_append_text(data_count_tree_item, " (Valid)");
+        gboolean extra_metadata_present = false;
+        proto_tree_add_item_ret_boolean(metadata_info_tree, HF_PCIE_METADATA_INFO_EXTRA_METADATA_PRESENT, tvb, 14, 2, ENC_LITTLE_ENDIAN, &extra_metadata_present);
+        proto_tree_add_item_ret_uint(metadata_info_tree, HF_PCIE_METADATA_INFO_METADATA_OFFSET, tvb, 14, 2, ENC_LITTLE_ENDIAN, &metadata_offset);
+        proto_item_append_text(metadata_info_tree_item, ": Offset: %d", metadata_offset);
+        if (extra_metadata_present) {
+            proto_item_append_text(metadata_info_tree_item, ", extra metadata present");
         }
     }
 
@@ -1438,20 +1438,20 @@ static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
     }
 
     tvbuff_t * frame_tvb;
-    if (data_valid_count > 0) {
-        frame_tvb = tvb_new_subset_length(tvb, PCIE_CAPTURE_HEADER_SIZE, data_valid_count);
+    if (metadata_offset > 0) {
+        frame_tvb = tvb_new_subset_length(tvb, PCIE_CAPTURE_HEADER_SIZE, metadata_offset);
 
-        int meta_len = 2 * ((data_valid_count + (8 - 1)) / 8);
-        if (PCIE_CAPTURE_HEADER_SIZE + data_valid_count + meta_len <= tvb_captured_length(tvb)) {
-            proto_item * meta_tree_item = proto_tree_add_item(pcie_tree, HF_PCIE_8B10B_META, tvb, PCIE_CAPTURE_HEADER_SIZE + data_valid_count, meta_len, ENC_NA);
+        int meta_len = 2 * ((metadata_offset + (8 - 1)) / 8);
+        if (PCIE_CAPTURE_HEADER_SIZE + metadata_offset + meta_len <= tvb_captured_length(tvb)) {
+            proto_item * meta_tree_item = proto_tree_add_item(pcie_tree, HF_PCIE_8B10B_META, tvb, PCIE_CAPTURE_HEADER_SIZE + metadata_offset, meta_len, ENC_NA);
             proto_tree * meta_tree = proto_item_add_subtree(meta_tree_item, ETT_PCIE_8B10B_META);
 
             for (int offset = 0; offset < meta_len; offset += 2) {
-                proto_item * meta_block_tree_item = proto_tree_add_item(meta_tree, HF_PCIE_8B10B_META_BLOCK, tvb, PCIE_CAPTURE_HEADER_SIZE + data_valid_count + offset, 2, ENC_NA);
+                proto_item * meta_block_tree_item = proto_tree_add_item(meta_tree, HF_PCIE_8B10B_META_BLOCK, tvb, PCIE_CAPTURE_HEADER_SIZE + metadata_offset + offset, 2, ENC_NA);
                 proto_tree * meta_block_tree = proto_item_add_subtree(meta_block_tree_item, ETT_PCIE_8B10B_META_BLOCK);
 
-                proto_tree_add_item(meta_block_tree, HF_PCIE_8B10B_META_BLOCK_K_SYMBOLS, tvb, PCIE_CAPTURE_HEADER_SIZE + data_valid_count + offset, 1, ENC_LITTLE_ENDIAN);
-                proto_tree_add_item(meta_block_tree, HF_PCIE_8B10B_META_BLOCK_DISPARITY_POLARITY, tvb, PCIE_CAPTURE_HEADER_SIZE + data_valid_count + offset + 1, 1, ENC_LITTLE_ENDIAN);
+                proto_tree_add_item(meta_block_tree, HF_PCIE_8B10B_META_BLOCK_K_SYMBOLS, tvb, PCIE_CAPTURE_HEADER_SIZE + metadata_offset + offset, 1, ENC_LITTLE_ENDIAN);
+                proto_tree_add_item(meta_block_tree, HF_PCIE_8B10B_META_BLOCK_DISPARITY_POLARITY, tvb, PCIE_CAPTURE_HEADER_SIZE + metadata_offset + offset + 1, 1, ENC_LITTLE_ENDIAN);
             }
         }
     } else {

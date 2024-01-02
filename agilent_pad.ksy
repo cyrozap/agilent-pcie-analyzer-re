@@ -112,9 +112,11 @@ types:
       - id: lfsr
         type: u2le
         doc: "The state of the scrambling LFSR at the time this record was captured. Used for restoring the 10-bit symbol data."
-      - id: bytes_valid
+      - id: metadata_info
         type: u2le
-        doc: "Bits [14:0]: The length of the sequence of valid bytes in the record data, starting from the first byte. Bit [15]: Unknown."
+        doc: >
+          Bits [14:0]: The offset of the 8b/10b / lane metadata, in bytes, measured from the start of the record data.
+          Bit [15]: If this bit is set, it indicates the presence of some additional metadata.
       - id: flags
         type: u4le
         doc: >

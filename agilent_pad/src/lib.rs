@@ -46,8 +46,8 @@ pub struct Record {
     pub count: u64,
     pub timestamp_ns: u64,
     pub lfsr: u16,
-    pub data_valid: bool,
-    pub data_valid_count: u16,
+    pub extra_metadata_present: bool,
+    pub metadata_offset: u16,
     pub flags: u32,
     pub data_offset: u64,
 }
@@ -74,8 +74,8 @@ impl Record {
                 count: u32_hi_lo_to_u64(o.2, o.3),
                 timestamp_ns: u32_hi_lo_to_u64(o.4, o.5),
                 lfsr: o.6,
-                data_valid: (o.7 & 0x8000) != 0,
-                data_valid_count: o.7 & 0x7FFF,
+                extra_metadata_present: (o.7 & 0x8000) != 0,
+                metadata_offset: o.7 & 0x7FFF,
                 flags: o.8,
                 data_offset: u32_hi_lo_to_u64(o.9, o.10),
             }),
@@ -275,7 +275,7 @@ pub struct RecordReader {
 }
 
 impl RecordReader {
-    fn get_data_for_record(&mut self, record: &Record, valid_only: bool) -> Vec<u8> {
+    fn get_data_for_record(&mut self, record: &Record, exclude_metadata: bool) -> Vec<u8> {
         self.data_reader
             .seek_relative(
                 <u64 as TryInto<i64>>::try_into(record.data_offset).unwrap()
@@ -283,8 +283,8 @@ impl RecordReader {
             )
             .unwrap();
 
-        let data_read_len = if valid_only && record.data_valid_count > 0 {
-            record.data_valid_count.into()
+        let data_read_len = if exclude_metadata && record.metadata_offset > 0 {
+            record.metadata_offset.into()
         } else {
             record.data_len.try_into().unwrap()
         };
@@ -299,7 +299,7 @@ impl RecordReader {
         buf
     }
 
-    pub fn get_valid_data_for_record(&mut self, record: &Record) -> Vec<u8> {
+    pub fn get_data_for_record_without_metadata(&mut self, record: &Record) -> Vec<u8> {
         self.get_data_for_record(record, true)
     }
 

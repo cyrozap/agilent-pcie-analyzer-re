@@ -115,12 +115,12 @@ def main():
 
         ts_ns_int = record_timestamp_ns // 1000000000
         ts_ns_frac = record_timestamp_ns % 1000000000
-        bytes_valid = record.bytes_valid & 0x7fff
-        bytes_valid_flag = record.bytes_valid >> 15
+        metadata_offset = record.metadata_info & 0x7fff
+        extra_metadata_present = record.metadata_info >> 15
 
         valid_data = record_data
-        if bytes_valid > 0:
-            valid_data = record_data[:bytes_valid]
+        if metadata_offset > 0:
+            valid_data = record_data[:metadata_offset]
 
         if args.filter_errors:
             if get_bit(record.flags, 3):
@@ -132,9 +132,9 @@ def main():
 
         debug_data = ""
         if args.debug:
-            debug_data = " (count: {}, lfsr: 0x{:04x}, bytes_valid: {} ({}), flags: 0x{:08x}, data_offset: {})".format(
+            debug_data = " (count: {}, lfsr: 0x{:04x}, metadata_offset: {} ({}), flags: 0x{:08x}, data_offset: {})".format(
                 (record.count.hi << 32) | record.count.lo, record.lfsr,
-                bytes_valid, bytes_valid_flag, record.flags,
+                metadata_offset, extra_metadata_present, record.flags,
                 (record.data_offset.hi << 32) | record.data_offset.lo)
 
         dllp = None

@@ -82,7 +82,9 @@ fn main() {
             prev_timestamp_ns = Some(record.timestamp_ns);
         }
 
-        let data = pad_file.record_reader.get_valid_data_for_record(&record);
+        let data = pad_file
+            .record_reader
+            .get_data_for_record_without_metadata(&record);
 
         let record_data = {
             let mut ret = String::with_capacity(2 + 2 * data.len());
@@ -95,11 +97,11 @@ fn main() {
         };
 
         let debug_data = format!(
-            " (count: {}, lfsr: 0x{:04x}, bytes_valid: {} ({}), flags: 0x{:08x}, data_offset: {})",
+            " (count: {}, lfsr: 0x{:04x}, metadata_offset: {} ({}), flags: 0x{:08x}, data_offset: {})",
             record.count,
             record.lfsr,
-            record.data_valid_count,
-            match record.data_valid {
+            record.metadata_offset,
+            match record.extra_metadata_present {
                 true => 1,
                 false => 0,
             },
