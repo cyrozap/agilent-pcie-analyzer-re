@@ -283,7 +283,7 @@ impl RecordReader {
             )
             .unwrap();
 
-        let data_read_len = if valid_only && record.data_valid {
+        let data_read_len = if valid_only && record.data_valid_count > 0 {
             record.data_valid_count.into()
         } else {
             record.data_len.try_into().unwrap()

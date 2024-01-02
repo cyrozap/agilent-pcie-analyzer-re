@@ -119,7 +119,7 @@ def main():
         bytes_valid_flag = record.bytes_valid >> 15
 
         valid_data = record_data
-        if bytes_valid_flag:
+        if bytes_valid > 0:
             valid_data = record_data[:bytes_valid]
 
         if args.filter_errors:
