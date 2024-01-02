@@ -110,6 +110,23 @@ static const value_string ORDERED_SETS[] = {
     { 0, NULL },
 };
 
+static const value_string TS_DATA_RATE_LINK_SPEEDS[] = {
+    { 0b00001, "Only 2.5 GT/s" },
+    { 0b00011, "Up to 5.0 GT/s" },
+    { 0b00111, "Up to 8.0 GT/s" },
+    { 0b01111, "Up to 16.0 GT/s" },
+    { 0b11111, "Up to 32.0 GT/s" },
+    { 0, NULL },
+};
+
+static const value_string TS_TC_ELBC[] = {
+    { 0, "Full Equalization Required" },
+    { 1, "Equalization Bypass to Highest NRZ Rate Support" },
+    { 2, "No Equalization Needed" },
+    { 3, "Modified TS1/TS2 Ordered Sets supported" },
+    { 0, NULL },
+};
+
 static const value_string DLLP_TYPE[] = {
     { 0b00000000, "Ack" },
     { 0b00000001, "MRInit" },
@@ -449,6 +466,22 @@ static int HF_PCIE_8B10B_META_BLOCK_DISPARITY_POLARITY = -1;
 
 static int HF_PCIE_FRAME_START_TAG = -1;
 static int HF_PCIE_FRAME_ORDERED_SET_TYPE = -1;
+static int HF_PCIE_FRAME_ORDERED_SET_TS_LINK_NUMBER = -1;
+static int HF_PCIE_FRAME_ORDERED_SET_TS_LANE_NUMBER = -1;
+static int HF_PCIE_FRAME_ORDERED_SET_TS_N_FTS = -1;
+static int HF_PCIE_FRAME_ORDERED_SET_TS_DATA_RATE = -1;
+static int HF_PCIE_FRAME_ORDERED_SET_TS_DATA_RATE_SC_SC = -1;
+static int HF_PCIE_FRAME_ORDERED_SET_TS_DATA_RATE_AC_SD = -1;
+static int HF_PCIE_FRAME_ORDERED_SET_TS_DATA_RATE_LINK_SPEEDS = -1;
+static int HF_PCIE_FRAME_ORDERED_SET_TS_DATA_RATE_FLIT_MODE = -1;
+static int HF_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL = -1;
+static int HF_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL_ELBC = -1;
+static int HF_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL_TMCPL = -1;
+static int HF_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL_COMPLIANCE = -1;
+static int HF_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL_DIS_SCRAMBLING = -1;
+static int HF_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL_LOOPBACK = -1;
+static int HF_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL_DIS_LINK = -1;
+static int HF_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL_HOT_RESET = -1;
 static int HF_PCIE_FRAME_TLP_RESERVED_AND_SEQ = -1;
 static int HF_PCIE_FRAME_TLP_RESERVED = -1;
 static int HF_PCIE_FRAME_TLP_SEQ = -1;
@@ -658,6 +691,102 @@ static hf_register_info HF_PCIE_FRAME[] = {
         { "Ordered Set Type", "pcie.frame.ordered_set.type",
         FT_UINT8, BASE_HEX,
         VALS(ORDERED_SETS), 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_FRAME_ORDERED_SET_TS_LINK_NUMBER,
+        { "Link Number", "pcie.frame.ordered_set.ts.link_number",
+        FT_UINT8, BASE_HEX,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_FRAME_ORDERED_SET_TS_LANE_NUMBER,
+        { "Lane Number within Link", "pcie.frame.ordered_set.ts.lane_number",
+        FT_UINT8, BASE_HEX,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_FRAME_ORDERED_SET_TS_N_FTS,
+        { "N_FTS", "pcie.frame.ordered_set.ts.n_fts",
+        FT_UINT8, BASE_DEC,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_FRAME_ORDERED_SET_TS_DATA_RATE,
+        { "Data Rate", "pcie.frame.ordered_set.ts.data_rate",
+        FT_NONE, BASE_NONE,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_FRAME_ORDERED_SET_TS_DATA_RATE_SC_SC,
+        { "speed_change / SRIS Clocking", "pcie.frame.ordered_set.ts.data_rate.sc_sc",
+        FT_BOOLEAN, 8,
+        NULL, 0x80,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_FRAME_ORDERED_SET_TS_DATA_RATE_AC_SD,
+        { "Autonomous Change / Selectable De-emphasis", "pcie.frame.ordered_set.ts.data_rate.ac_sd",
+        FT_BOOLEAN, 8,
+        NULL, 0x40,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_FRAME_ORDERED_SET_TS_DATA_RATE_LINK_SPEEDS,
+        { "Supported Link Speeds", "pcie.frame.ordered_set.ts.data_rate.link_speeds",
+        FT_UINT8, BASE_HEX,
+        VALS(TS_DATA_RATE_LINK_SPEEDS), 0x3E,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_FRAME_ORDERED_SET_TS_DATA_RATE_FLIT_MODE,
+        { "Flit Mode Supported", "pcie.frame.ordered_set.ts.data_rate.flit_mode",
+        FT_BOOLEAN, 8,
+        NULL, 0x01,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL,
+        { "Training Control", "pcie.frame.ordered_set.ts.training_control",
+        FT_NONE, BASE_NONE,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL_ELBC,
+        { "Enhanced Link Behavior Control", "pcie.frame.ordered_set.ts.training_control.elbc",
+        FT_UINT8, BASE_HEX,
+        VALS(TS_TC_ELBC), 0xC0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL_TMCPL,
+        { "Transmit Modified Compliance Pattern in Loopback", "pcie.frame.ordered_set.ts.training_control.tmcpl",
+        FT_BOOLEAN, 8,
+        NULL, 0x20,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL_COMPLIANCE,
+        { "Compliance Receive", "pcie.frame.ordered_set.ts.training_control.compliance_receive",
+        FT_BOOLEAN, 8,
+        NULL, 0x10,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL_DIS_SCRAMBLING,
+        { "Disable Scrambling", "pcie.frame.ordered_set.ts.training_control.disable_scrambling",
+        FT_BOOLEAN, 8,
+        NULL, 0x08,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL_LOOPBACK,
+        { "Loopback", "pcie.frame.ordered_set.ts.training_control.loopback",
+        FT_BOOLEAN, 8,
+        NULL, 0x04,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL_DIS_LINK,
+        { "Disable Link", "pcie.frame.ordered_set.ts.training_control.disable_link",
+        FT_BOOLEAN, 8,
+        NULL, 0x02,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL_HOT_RESET,
+        { "Hot Reset", "pcie.frame.ordered_set.ts.training_control.hot_reset",
+        FT_BOOLEAN, 8,
+        NULL, 0x01,
         NULL, HFILL }
     },
     { &HF_PCIE_FRAME_TLP_RESERVED_AND_SEQ,
@@ -1064,6 +1193,8 @@ static int ETT_PCIE_FLAGS = -1;
 static int ETT_PCIE_8B10B_META = -1;
 static int ETT_PCIE_8B10B_META_BLOCK = -1;
 static int ETT_PCIE_FRAME = -1;
+static int ETT_PCIE_FRAME_ORDERED_SET_TS_DATA_RATE = -1;
+static int ETT_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL = -1;
 static int ETT_PCIE_FRAME_TLP_RESERVED_AND_SEQ = -1;
 static int ETT_PCIE_DLLP = -1;
 static int ETT_PCIE_DLLP_ACK_NAK_RESERVED_AND_SEQ_NUM = -1;
@@ -1085,6 +1216,8 @@ static int * const ETT[] = {
         &ETT_PCIE_8B10B_META,
         &ETT_PCIE_8B10B_META_BLOCK,
         &ETT_PCIE_FRAME,
+        &ETT_PCIE_FRAME_ORDERED_SET_TS_DATA_RATE,
+        &ETT_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL,
         &ETT_PCIE_FRAME_TLP_RESERVED_AND_SEQ,
         &ETT_PCIE_DLLP,
         &ETT_PCIE_DLLP_ACK_NAK_RESERVED_AND_SEQ_NUM,
@@ -1431,6 +1564,38 @@ static int dissect_pcie_frame(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tre
                     uint32_t os_type = 0;
                     proto_tree_add_item_ret_uint(frame_tree, HF_PCIE_FRAME_ORDERED_SET_TYPE, tvb, 6, 1, ENC_BIG_ENDIAN, &os_type);
                     col_append_fstr(pinfo->cinfo, COL_INFO, "%s", try_val_to_str(os_type, ORDERED_SETS));
+
+                    // Only process the TS1/TS2 Ordered Set if it's not inverted
+                    if ((ts_type == 0x4A) || (ts_type == 0x45)) {
+                        proto_tree_add_item(frame_tree, HF_PCIE_FRAME_ORDERED_SET_TS_LINK_NUMBER, tvb, 1, 1, ENC_BIG_ENDIAN);
+                        proto_tree_add_item(frame_tree, HF_PCIE_FRAME_ORDERED_SET_TS_LANE_NUMBER, tvb, 2, 1, ENC_BIG_ENDIAN);
+                        proto_tree_add_item(frame_tree, HF_PCIE_FRAME_ORDERED_SET_TS_N_FTS, tvb, 3, 1, ENC_BIG_ENDIAN);
+
+                        proto_item * data_rate_item = proto_tree_add_item(frame_tree, HF_PCIE_FRAME_ORDERED_SET_TS_DATA_RATE, tvb, 4, 1, ENC_NA);
+                        proto_tree * data_rate_tree = proto_item_add_subtree(data_rate_item, ETT_PCIE_FRAME_ORDERED_SET_TS_DATA_RATE);
+
+                        proto_tree_add_item(data_rate_tree, HF_PCIE_FRAME_ORDERED_SET_TS_DATA_RATE_SC_SC, tvb, 4, 1, ENC_BIG_ENDIAN);
+                        proto_tree_add_item(data_rate_tree, HF_PCIE_FRAME_ORDERED_SET_TS_DATA_RATE_AC_SD, tvb, 4, 1, ENC_BIG_ENDIAN);
+                        uint32_t link_speed = 0;
+                        proto_tree_add_item_ret_uint(data_rate_tree, HF_PCIE_FRAME_ORDERED_SET_TS_DATA_RATE_LINK_SPEEDS, tvb, 4, 1, ENC_BIG_ENDIAN, &link_speed);
+                        proto_tree_add_item(data_rate_tree, HF_PCIE_FRAME_ORDERED_SET_TS_DATA_RATE_FLIT_MODE, tvb, 4, 1, ENC_BIG_ENDIAN);
+
+                        const char * link_speed_str = try_val_to_str(link_speed, TS_DATA_RATE_LINK_SPEEDS);
+                        if (link_speed_str != NULL) {
+                            proto_item_append_text(data_rate_item, ": %s", link_speed_str);
+                        }
+
+                        proto_item * tc_item = proto_tree_add_item(frame_tree, HF_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL, tvb, 5, 1, ENC_NA);
+                        proto_tree * tc_tree = proto_item_add_subtree(tc_item, ETT_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL);
+
+                        proto_tree_add_item(tc_tree, HF_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL_ELBC, tvb, 5, 1, ENC_BIG_ENDIAN);
+                        proto_tree_add_item(tc_tree, HF_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL_TMCPL, tvb, 5, 1, ENC_BIG_ENDIAN);
+                        proto_tree_add_item(tc_tree, HF_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL_COMPLIANCE, tvb, 5, 1, ENC_BIG_ENDIAN);
+                        proto_tree_add_item(tc_tree, HF_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL_DIS_SCRAMBLING, tvb, 5, 1, ENC_BIG_ENDIAN);
+                        proto_tree_add_item(tc_tree, HF_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL_LOOPBACK, tvb, 5, 1, ENC_BIG_ENDIAN);
+                        proto_tree_add_item(tc_tree, HF_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL_DIS_LINK, tvb, 5, 1, ENC_BIG_ENDIAN);
+                        proto_tree_add_item(tc_tree, HF_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL_HOT_RESET, tvb, 5, 1, ENC_BIG_ENDIAN);
+                    }
                 }
             }
             break;
