@@ -115,7 +115,7 @@ def main():
 
         ts_ns_int = record_timestamp_ns // 1000000000
         ts_ns_frac = record_timestamp_ns % 1000000000
-        bytes_valid = record.bytes_valid & 0x7ff
+        bytes_valid = record.bytes_valid & 0x7fff
         bytes_valid_flag = record.bytes_valid >> 15
 
         valid_data = record_data
