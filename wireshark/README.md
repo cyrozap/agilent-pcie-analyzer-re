@@ -1,4 +1,4 @@
-# pcie-dissector
+# Wireshark PCIe dissector plugin
 
 A dissector plugin for Wireshark that can decode PCI Express captures converted
 to PCAP-NG format by [pad2pcapng][pad2pcapng].
