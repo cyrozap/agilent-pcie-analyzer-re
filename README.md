@@ -6,6 +6,8 @@ their host software.
 
 ## Repository contents
 
+- [pad-files][pad-files]: Sample PCIe capture files in Agilent PAD (Protocol
+  Analyzer Data) format.
 - [tools][tools]:
   - [agilent\_pad][rust-library]: A Rust library and tools for parsing and
     converting Agilent PAD PCIe capture files to PCAP-NG. The PCAP-NG files
@@ -55,6 +57,7 @@ Except where otherwise noted:
   [Creative Commons Attribution-ShareAlike 4.0 International License][cc-by-sa].
 
 
+[pad-files]: pad-files
 [tools]: tools
 [rust-library]: tools/agilent_pad
 [dissector]: wireshark
