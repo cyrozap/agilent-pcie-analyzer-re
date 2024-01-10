@@ -24,5 +24,5 @@ Once converted, the PCAP-NG file can be used with the
 [GNU General Public License, version 3 or later][license].
 
 
-[dissector]: ../pcie-dissector
-[license]: ../COPYING.txt
+[dissector]: ../../pcie-dissector
+[license]: ../../COPYING.txt
