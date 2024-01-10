@@ -23,7 +23,7 @@ coloring rules work and how to import them [here][wiki] and [here][user guide].
 [GNU General Public License, version 2 or later][license].
 
 
-[pad2pcapng]: ../agilent_pad/examples/pad2pcapng.rs
+[pad2pcapng]: ../tools/agilent_pad/examples/pad2pcapng.rs
 [coloring]: config/pcie_coloring_rules.txt
 [wiki]: https://gitlab.com/wireshark/wireshark/-/wikis/ColoringRules
 [user guide]: https://www.wireshark.org/docs/wsug_html_chunked/ChCustColorizationSection.html
