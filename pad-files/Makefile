@@ -17,6 +17,7 @@
 
 PAD2PCAPNG ?= ../tools/agilent_pad/target/release/examples/pad2pcapng
 ZSTD ?= zstd
+ZSTD_FLAGS ?= -T0 -19
 
 COMPRESSED_PAD_FILES := $(wildcard *.pad.zst)
 DECOMPRESSED_PAD_FILES := $(COMPRESSED_PAD_FILES:%.pad.zst=%.pad)
@@ -24,9 +25,13 @@ OTHER_PAD_FILES := $(wildcard *.pad)
 
 PAD_TARGETS := $(DECOMPRESSED_PAD_FILES) $(OTHER_PAD_FILES)
 PCAPNG_TARGETS := $(PAD_TARGETS:%.pad=%.pcapng)
+COMPRESSED_PCAPNG_TARGETS := $(PCAPNG_TARGETS:%.pcapng=%.pcapng.zst)
 
 
-all: $(PCAPNG_TARGETS)
+all: $(COMPRESSED_PCAPNG_TARGETS)
+
+%.pcapng.zst: %.pcapng
+	$(ZSTD) $(ZSTD_FLAGS) -o $@ $<
 
 %.pcapng: %.pad $(PAD2PCAPNG)
 	$(PAD2PCAPNG) $< $@
@@ -38,7 +43,7 @@ all: $(PCAPNG_TARGETS)
 	(cd ../tools/agilent_pad/ && cargo build --release --example pad2pcapng)
 
 clean:
-	rm -f $(PCAPNG_TARGETS) $(DECOMPRESSED_PAD_FILES)
+	rm -f $(COMPRESSED_PCAPNG_TARGETS) $(PCAPNG_TARGETS) $(DECOMPRESSED_PAD_FILES)
 
 
 .PHONY: all clean
