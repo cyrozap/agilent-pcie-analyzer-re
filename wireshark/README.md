@@ -3,6 +3,8 @@
 A dissector plugin for Wireshark that can decode PCI Express captures converted
 to PCAP-NG format by [pad2pcapng][pad2pcapng].
 
+[![][screenshot]][screenshot]
+
 
 ## How to use
 
@@ -24,6 +26,7 @@ coloring rules work and how to import them [here][wiki] and [here][user guide].
 
 
 [pad2pcapng]: ../tools/agilent_pad/examples/pad2pcapng.rs
+[screenshot]: doc/screenshot.png
 [coloring]: config/pcie_coloring_rules.txt
 [wiki]: https://gitlab.com/wireshark/wireshark/-/wikis/ColoringRules
 [user guide]: https://www.wireshark.org/docs/wsug_html_chunked/ChCustColorizationSection.html
