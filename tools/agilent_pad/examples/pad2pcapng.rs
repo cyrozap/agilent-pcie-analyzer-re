@@ -165,7 +165,7 @@ fn main() {
                 .write_all(&0x00000006_u32.to_le_bytes())
                 .unwrap();
 
-            let mut block_data: Vec<u8> = Vec::new();
+            let mut block_data: Vec<u8> = Vec::with_capacity(4*1024);
             block_data.append(&mut 0_u32.to_le_bytes().to_vec());
             block_data.append(
                 &mut <u64 as TryInto<u32>>::try_into(record.timestamp_ns.checked_shr(32).unwrap())
