@@ -68,16 +68,31 @@ impl Record {
             le_u32,
         ))(input)
         {
-            Ok((_, o)) => Some(Self {
-                number: o.0,
-                data_len: o.1,
-                count: u32_hi_lo_to_u64(o.2, o.3),
-                timestamp_ns: u32_hi_lo_to_u64(o.4, o.5),
-                lfsr: o.6,
-                extra_metadata_present: (o.7 & 0x8000) != 0,
-                metadata_offset: o.7 & 0x7FFF,
-                flags: o.8,
-                data_offset: u32_hi_lo_to_u64(o.9, o.10),
+            Ok((
+                _,
+                (
+                    number,
+                    data_len,
+                    count_hi,
+                    count_lo,
+                    timestamp_ns_hi,
+                    timestamp_ns_lo,
+                    lfsr,
+                    metadata_info,
+                    flags,
+                    data_offset_hi,
+                    data_offset_lo,
+                ),
+            )) => Some(Self {
+                number,
+                data_len,
+                count: u32_hi_lo_to_u64(count_hi, count_lo),
+                timestamp_ns: u32_hi_lo_to_u64(timestamp_ns_hi, timestamp_ns_lo),
+                lfsr,
+                extra_metadata_present: (metadata_info & 0x8000) != 0,
+                metadata_offset: metadata_info & 0x7FFF,
+                flags,
+                data_offset: u32_hi_lo_to_u64(data_offset_hi, data_offset_lo),
             }),
             Err(e) => panic!("{:?}", e),
         }
