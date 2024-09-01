@@ -22,7 +22,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 
-use nom::multi::{count, length_data};
+use nom::multi::length_data;
 use nom::number::streaming::{be_u16, be_u32, be_u64, le_u16, le_u32};
 use nom::sequence::tuple;
 use nom::IResult;
@@ -121,11 +121,11 @@ pub struct CoarseTimestamp {
 }
 
 impl CoarseTimestamp {
-    pub fn from_slice(input: &[u16]) -> Self {
+    pub fn from_tuple(input: (u16, u16, u16)) -> Self {
         Self {
-            hour: input[0],
-            minute: input[1],
-            millisec: input[2],
+            hour: input.0,
+            minute: input.1,
+            millisec: input.2,
         }
     }
 
@@ -141,7 +141,7 @@ pub struct PadHeader {
     pub rx_or_tx: String,
     pub description: String,
     pub format_code: String,
-    pub numbers0: Vec<u32>,
+    pub numbers0: (u32, u32),
     pub trigger_record_number: u32,
     pub three: u32,
     pub first_record_number: u32,
@@ -170,8 +170,14 @@ impl PadHeader {
             pad_reader.read_exact(buffer.as_mut_slice()).unwrap();
             //println!("bytes read: {}", bytes_read);
             match tuple((
-                count(parse_string, 5),
-                count(be_u32, 2),
+                tuple((
+                    parse_string,
+                    parse_string,
+                    parse_string,
+                    parse_string,
+                    parse_string,
+                )),
+                tuple((be_u32, be_u32)),
                 be_u32,
                 be_u32,
                 be_u32,
@@ -183,8 +189,9 @@ impl PadHeader {
                 be_u64,
                 be_u64,
                 parse_string,
-                count(parse_string, 2),
-                count(be_u16, 6),
+                tuple((parse_string, parse_string)),
+                tuple((be_u16, be_u16, be_u16)),
+                tuple((be_u16, be_u16, be_u16)),
                 be_u64,
                 be_u64,
                 parse_string,
@@ -192,11 +199,11 @@ impl PadHeader {
             {
                 Ok((_, o)) => {
                     return Some(Self {
-                        module_type: String::from_utf8_lossy(o.0[0]).into(),
-                        port_id: String::from_utf8_lossy(o.0[1]).into(),
-                        rx_or_tx: String::from_utf8_lossy(o.0[2]).into(),
-                        description: String::from_utf8_lossy(o.0[3]).into(),
-                        format_code: String::from_utf8_lossy(o.0[4]).into(),
+                        module_type: String::from_utf8_lossy(o.0 .0).into(),
+                        port_id: String::from_utf8_lossy(o.0 .1).into(),
+                        rx_or_tx: String::from_utf8_lossy(o.0 .2).into(),
+                        description: String::from_utf8_lossy(o.0 .3).into(),
+                        format_code: String::from_utf8_lossy(o.0 .4).into(),
                         numbers0: o.1,
                         trigger_record_number: o.2,
                         three: o.3,
@@ -212,14 +219,14 @@ impl PadHeader {
                         },
                         guid: String::from_utf8_lossy(o.12).into(),
                         channel_names: ChannelNames {
-                            a: String::from_utf8_lossy(o.13[0]).into(),
-                            b: String::from_utf8_lossy(o.13[1]).into(),
+                            a: String::from_utf8_lossy(o.13 .0).into(),
+                            b: String::from_utf8_lossy(o.13 .1).into(),
                         },
-                        start_time: CoarseTimestamp::from_slice(&o.14[..3]),
-                        stop_time: CoarseTimestamp::from_slice(&o.14[3..]),
-                        records_offset: o.15,
-                        record_data_offset: o.16,
-                        start: String::from_utf8_lossy(o.17).into(),
+                        start_time: CoarseTimestamp::from_tuple(o.14),
+                        stop_time: CoarseTimestamp::from_tuple(o.15),
+                        records_offset: o.16,
+                        record_data_offset: o.17,
+                        start: String::from_utf8_lossy(o.18).into(),
                     })
                 }
                 Err(nom::Err::Incomplete(nom::Needed::Size(n))) => expand = n.get(),
