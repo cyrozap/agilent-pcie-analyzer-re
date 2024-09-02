@@ -46,6 +46,6 @@ static const proto_plugin plugin_pcie = {
     .register_handoff = proto_reg_handoff_all,
 };
 
-void plugin_register() {
+void plugin_register(void) {
     proto_register_plugin(&plugin_pcie);
 }
