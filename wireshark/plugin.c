@@ -21,6 +21,7 @@
 #include <stdint.h>
 
 #include <epan/proto.h>
+#include <wsutil/plugins.h>
 
 #include "proto_nettlp.h"
 #include "proto_pcie.h"
@@ -48,4 +49,8 @@ static const proto_plugin plugin_pcie = {
 
 void plugin_register(void) {
     proto_register_plugin(&plugin_pcie);
+}
+
+uint32_t plugin_describe(void) {
+    return WS_PLUGIN_DESC_DISSECTOR;
 }
