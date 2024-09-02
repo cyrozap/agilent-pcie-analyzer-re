@@ -2,7 +2,7 @@
 
 /*
  *  plugin.c - PCIe dissector plugin for Wireshark.
- *  Copyright (C) 2023  Forest Crossman <cyrozap@gmail.com>
+ *  Copyright (C) 2023-2024  Forest Crossman <cyrozap@gmail.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -32,20 +32,20 @@ uint32_t const plugin_want_minor = PLUGIN_WANT_MINOR;
 
 
 static void proto_register_all(void) {
-	proto_register_pcie();
-	proto_register_nettlp();
+    proto_register_pcie();
+    proto_register_nettlp();
 }
 
 static void proto_reg_handoff_all(void) {
-	proto_reg_handoff_pcie();
-	proto_reg_handoff_nettlp();
+    proto_reg_handoff_pcie();
+    proto_reg_handoff_nettlp();
 }
 
 static const proto_plugin plugin_pcie = {
-	.register_protoinfo = proto_register_all,
-	.register_handoff = proto_reg_handoff_all,
+    .register_protoinfo = proto_register_all,
+    .register_handoff = proto_reg_handoff_all,
 };
 
 void plugin_register() {
-	proto_register_plugin(&plugin_pcie);
+    proto_register_plugin(&plugin_pcie);
 }
