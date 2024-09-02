@@ -18,6 +18,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include <epan/conversation.h>
@@ -38,8 +39,8 @@ typedef struct tlp_bdf_s {
 } tlp_bdf_t;
 
 typedef struct tlp_transaction_s {
-    guint32 req_frame;
-    guint32 cpl_frame;
+    uint32_t req_frame;
+    uint32_t cpl_frame;
     nstime_t req_time;
 } tlp_transaction_t;
 
@@ -1372,7 +1373,7 @@ static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
         proto_item * metadata_info_tree_item = proto_tree_add_item(pcie_tree, HF_PCIE_METADATA_INFO, tvb, 14, 2, ENC_NA);
         proto_tree * metadata_info_tree = proto_item_add_subtree(metadata_info_tree_item, ETT_PCIE_METADATA_INFO);
 
-        gboolean extra_metadata_present = false;
+        bool extra_metadata_present = false;
         proto_tree_add_item_ret_boolean(metadata_info_tree, HF_PCIE_METADATA_INFO_EXTRA_METADATA_PRESENT, tvb, 14, 2, ENC_LITTLE_ENDIAN, &extra_metadata_present);
         proto_tree_add_item_ret_uint(metadata_info_tree, HF_PCIE_METADATA_INFO_METADATA_OFFSET, tvb, 14, 2, ENC_LITTLE_ENDIAN, &metadata_offset);
         proto_item_append_text(metadata_info_tree_item, ": Offset: %d", metadata_offset);
@@ -1388,12 +1389,12 @@ static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
 
     proto_tree_add_item(flags_tree, HF_PCIE_SCRAMBLED, tvb, 16, 4, ENC_LITTLE_ENDIAN);
 
-    gboolean direction = 0;
+    bool direction = 0;
     proto_tree_add_item_ret_boolean(flags_tree, HF_PCIE_DIRECTION, tvb, 16, 4, ENC_LITTLE_ENDIAN, &direction);
 
     proto_tree_add_item(flags_tree, HF_PCIE_ELECTRICAL_IDLE, tvb, 16, 4, ENC_LITTLE_ENDIAN);
 
-    gboolean disparity_error = 0;
+    bool disparity_error = 0;
     proto_item * disparity_error_item = proto_tree_add_item_ret_boolean(flags_tree, HF_PCIE_DISPARITY_ERROR, tvb, 16, 4, ENC_LITTLE_ENDIAN, &disparity_error);
 
     proto_tree_add_item(flags_tree, HF_PCIE_CHANNEL_BONDED, tvb, 16, 4, ENC_LITTLE_ENDIAN);
@@ -1403,7 +1404,7 @@ static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
 
     proto_tree_add_item(flags_tree, HF_PCIE_START_LANE, tvb, 16, 4, ENC_LITTLE_ENDIAN);
 
-    gboolean symbol_error = 0;
+    bool symbol_error = 0;
     proto_item * symbol_error_item = proto_tree_add_item_ret_boolean(flags_tree, HF_PCIE_SYMBOL_ERROR, tvb, 16, 4, ENC_LITTLE_ENDIAN, &symbol_error);
 
     uint32_t link_width = 0;
@@ -1540,25 +1541,25 @@ static int dissect_pcie_frame(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tre
             }
             break;
         case K_28_5:
-            if (tvb_get_guint8(tvb, 1) == K_28_0) {
+            if (tvb_get_uint8(tvb, 1) == K_28_0) {
                 // SKP Ordered Set
                 col_set_str(pinfo->cinfo, COL_INFO, "SKP Ordered Set");
                 proto_tree_add_item(frame_tree, HF_PCIE_FRAME_ORDERED_SET_TYPE, tvb, 1, 1, ENC_BIG_ENDIAN);
-            } else if ((tvb_get_guint8(tvb, 1) == K_28_1) && (tvb_get_guint8(tvb, 2) == K_28_1) && (tvb_get_guint8(tvb, 3) == K_28_1)) {
+            } else if ((tvb_get_uint8(tvb, 1) == K_28_1) && (tvb_get_uint8(tvb, 2) == K_28_1) && (tvb_get_uint8(tvb, 3) == K_28_1)) {
                 // Fast Training Sequence (FTS)
                 col_set_str(pinfo->cinfo, COL_INFO, "Fast Training Sequence");
                 proto_tree_add_item(frame_tree, HF_PCIE_FRAME_ORDERED_SET_TYPE, tvb, 1, 1, ENC_BIG_ENDIAN);
-            } else if ((tvb_get_guint8(tvb, 1) == K_28_3) && (tvb_get_guint8(tvb, 2) == K_28_3) && (tvb_get_guint8(tvb, 3) == K_28_3)) {
+            } else if ((tvb_get_uint8(tvb, 1) == K_28_3) && (tvb_get_uint8(tvb, 2) == K_28_3) && (tvb_get_uint8(tvb, 3) == K_28_3)) {
                 // Electrical Idle Ordered Set (EIOS)
                 col_set_str(pinfo->cinfo, COL_INFO, "Electrical Idle Ordered Set");
                 proto_tree_add_item(frame_tree, HF_PCIE_FRAME_ORDERED_SET_TYPE, tvb, 1, 1, ENC_BIG_ENDIAN);
-            } else if (tvb_get_guint8(tvb, 1) == K_28_7) {
+            } else if (tvb_get_uint8(tvb, 1) == K_28_7) {
                 // Electrical Idle Exit Ordered Set (EIEOS)
                 col_set_str(pinfo->cinfo, COL_INFO, "Electrical Idle Exit Ordered Set");
                 proto_tree_add_item(frame_tree, HF_PCIE_FRAME_ORDERED_SET_TYPE, tvb, 1, 1, ENC_BIG_ENDIAN);
             } else {
                 // Assume Training Sequence
-                uint32_t ts_type = tvb_get_guint8(tvb, 6);
+                uint32_t ts_type = tvb_get_uint8(tvb, 6);
                 if ((ts_type == 0x4A) || (ts_type == 0xB5) || (ts_type == 0x45) || (ts_type == 0xBA)) {
                     // TS1/TS2 Ordered Set
                     uint32_t os_type = 0;
@@ -1646,10 +1647,10 @@ static int dissect_pcie_dllp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree
                 proto_item * feature_support_tree_item = proto_tree_add_item(dllp_tree, HF_PCIE_DLLP_FEATURE_ACK_AND_SUPPORT, tvb, 1, 3, ENC_NA);
                 proto_tree * feature_support_tree = proto_item_add_subtree(feature_support_tree_item, ETT_PCIE_DLLP_FEATURE_ACK_AND_SUPPORT);
 
-                gboolean ack = 0;
+                bool ack = 0;
                 proto_tree_add_item_ret_boolean(feature_support_tree, HF_PCIE_DLLP_FEATURE_ACK, tvb, 1, 3, ENC_BIG_ENDIAN, &ack);
 
-                gboolean local_scaled_flow_control = 0;
+                bool local_scaled_flow_control = 0;
                 proto_tree_add_item_ret_boolean(feature_support_tree, HF_PCIE_DLLP_FEATURE_SUPPORT_LOCAL_SCALED_FLOW_CONTROL, tvb, 1, 3, ENC_BIG_ENDIAN, &local_scaled_flow_control);
 
                 if (ack || local_scaled_flow_control) {
@@ -1762,7 +1763,7 @@ static int dissect_pcie_tlp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree,
 
     proto_tree_add_item(dw0_tree, HF_PCIE_TLP_ATTR2, tvb, 1, 3, ENC_BIG_ENDIAN);
 
-    gboolean lightweight_notification = 0;
+    bool lightweight_notification = 0;
     proto_tree_add_item_ret_boolean(dw0_tree, HF_PCIE_TLP_LN, tvb, 1, 3, ENC_BIG_ENDIAN, &lightweight_notification);
     if (lightweight_notification) {
         proto_item_append_text(dw0_tree_item, ", LN");
@@ -1770,10 +1771,10 @@ static int dissect_pcie_tlp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree,
 
     proto_tree_add_item(dw0_tree, HF_PCIE_TLP_TH, tvb, 1, 3, ENC_BIG_ENDIAN);
 
-    gboolean tlp_digest = 0;
+    bool tlp_digest = 0;
     proto_tree_add_item_ret_boolean(dw0_tree, HF_PCIE_TLP_TD, tvb, 1, 3, ENC_BIG_ENDIAN, &tlp_digest);
 
-    gboolean error_poisoned = 0;
+    bool error_poisoned = 0;
     proto_tree_add_item_ret_boolean(dw0_tree, HF_PCIE_TLP_EP, tvb, 1, 3, ENC_BIG_ENDIAN, &error_poisoned);
     if (error_poisoned) {
         proto_item_append_text(dw0_tree_item, ", EP");
@@ -2076,7 +2077,7 @@ static void dissect_tlp_cpl(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree,
     }
     col_append_fstr(pinfo->cinfo, COL_INFO, ", %s", status_str);
 
-    gboolean bcm = false;
+    bool bcm = false;
     proto_tree_add_item_ret_boolean(status_bcm_byte_count_tree, HF_PCIE_TLP_CPL_BCM, tvb, 6, 2, ENC_BIG_ENDIAN, &bcm);
 
     uint32_t byte_count = 0;
