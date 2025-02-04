@@ -465,6 +465,23 @@ static int HF_PCIE_8B10B_META = -1;
 static int HF_PCIE_8B10B_META_BLOCK = -1;
 static int HF_PCIE_8B10B_META_BLOCK_K_SYMBOLS = -1;
 static int HF_PCIE_8B10B_META_BLOCK_DISPARITY_POLARITY = -1;
+static int HF_PCIE_EXTRA_META = -1;
+static int HF_PCIE_LFSR_META = -1;
+static int HF_PCIE_LFSR_META_BLOCK = -1;
+static int HF_PCIE_LFSR_META_BLOCK_CONTROL = -1;
+static int HF_PCIE_LFSR_META_BLOCK_CONTROL_LFSR_PRESENT = -1;
+static int HF_PCIE_LFSR_META_BLOCK_CONTROL_TYPE = -1;
+static int HF_PCIE_LFSR_META_BLOCK_CONTROL_LINK_SPEED = -1;
+static int HF_PCIE_LFSR_META_BLOCK_IDLES_AFTER_32 = -1;
+static int HF_PCIE_LFSR_META_BLOCK_IDLES_AFTER_64 = -1;
+static int HF_PCIE_LFSR_META_BLOCK_ELECTRICAL_IDLE = -1;
+static int HF_PCIE_LFSR_META_BLOCK_LFSR_STATE = -1;
+static int HF_PCIE_LFSR_META_BLOCK_DATA_LEN = -1;
+static int HF_PCIE_LFSR_META_BLOCK_DATA = -1;
+static int HF_PCIE_LFSR_META_BLOCK_DATA_8B10B_META = -1;
+static int HF_PCIE_LFSR_META_BLOCK_DATA_8B10B_META_BLOCK = -1;
+static int HF_PCIE_LFSR_META_BLOCK_DATA_8B10B_META_BLOCK_K_SYMBOLS = -1;
+static int HF_PCIE_LFSR_META_BLOCK_DATA_8B10B_META_BLOCK_DISPARITY_POLARITY = -1;
 
 static int HF_PCIE_FRAME_START_TAG = -1;
 static int HF_PCIE_FRAME_ORDERED_SET_TYPE = -1;
@@ -677,6 +694,108 @@ static hf_register_info HF_PCIE[] = {
     },
     { &HF_PCIE_8B10B_META_BLOCK_DISPARITY_POLARITY,
         { "Disparity Polarity", "pcie.8b10b_meta.block.disparity_polarity",
+        FT_UINT8, BASE_HEX,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_EXTRA_META,
+        { "Extra Metadata", "pcie.extra_meta",
+        FT_BYTES, BASE_NONE,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_LFSR_META,
+        { "LFSR Metadata", "pcie.lfsr_meta",
+        FT_BYTES, BASE_NONE,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_LFSR_META_BLOCK,
+        { "Metadata Block", "pcie.lfsr_meta.block",
+        FT_BYTES, BASE_NONE,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_LFSR_META_BLOCK_CONTROL,
+        { "Control Byte", "pcie.lfsr_meta.block.control",
+        FT_UINT8, BASE_HEX,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_LFSR_META_BLOCK_CONTROL_LFSR_PRESENT,
+        { "LFSR State Present", "pcie.lfsr_meta.block.control.lfsr_present",
+        FT_BOOLEAN, 8,
+        NULL, 0x40,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_LFSR_META_BLOCK_CONTROL_TYPE,
+        { "Type", "pcie.lfsr_meta.block.control.type",
+        FT_UINT8, BASE_HEX,
+        NULL, 0x30,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_LFSR_META_BLOCK_CONTROL_LINK_SPEED,
+        { "Link Speed", "pcie.lfsr_meta.block.control.link_speed",
+        FT_UINT8, BASE_HEX,
+        VALS(LINK_SPEED), 0x03,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_LFSR_META_BLOCK_IDLES_AFTER_32,
+        { "Idles After", "pcie.lfsr_meta.block.idles_after",
+        FT_UINT32, BASE_DEC,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_LFSR_META_BLOCK_IDLES_AFTER_64,
+        { "Idles After", "pcie.lfsr_meta.block.idles_after",
+        FT_UINT64, BASE_DEC,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_LFSR_META_BLOCK_ELECTRICAL_IDLE,
+        { "Electrical Idle", "pcie.lfsr_meta.block.electrical_idle",
+        FT_UINT16, BASE_HEX,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_LFSR_META_BLOCK_LFSR_STATE,
+        { "LFSR State", "pcie.lfsr_meta.block.lfsr_state",
+        FT_UINT16, BASE_HEX,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_LFSR_META_BLOCK_DATA_LEN,
+        { "Data Length", "pcie.lfsr_meta.block.data_len",
+        FT_UINT16, BASE_DEC,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_LFSR_META_BLOCK_DATA,
+        { "Data", "pcie.lfsr_meta.block.data",
+        FT_BYTES, BASE_NONE,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_LFSR_META_BLOCK_DATA_8B10B_META,
+        { "8b/10b Metadata", "pcie.lfsr_meta.block.data_8b10b_meta",
+        FT_BYTES, BASE_NONE,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_LFSR_META_BLOCK_DATA_8B10B_META_BLOCK,
+        { "Metadata Block", "pcie.lfsr_meta.block.data_8b10b_meta.block",
+        FT_BYTES, BASE_NONE,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_LFSR_META_BLOCK_DATA_8B10B_META_BLOCK_K_SYMBOLS,
+        { "K Symbols", "pcie.lfsr_meta.block.data_8b10b_meta.block.k_symbols",
+        FT_UINT8, BASE_HEX,
+        NULL, 0x0,
+        NULL, HFILL }
+    },
+    { &HF_PCIE_LFSR_META_BLOCK_DATA_8B10B_META_BLOCK_DISPARITY_POLARITY,
+        { "Disparity Polarity", "pcie.lfsr_meta.block.data_8b10b_meta.block.disparity_polarity",
         FT_UINT8, BASE_HEX,
         NULL, 0x0,
         NULL, HFILL }
@@ -1201,6 +1320,11 @@ static int ETT_PCIE_METADATA_INFO = -1;
 static int ETT_PCIE_FLAGS = -1;
 static int ETT_PCIE_8B10B_META = -1;
 static int ETT_PCIE_8B10B_META_BLOCK = -1;
+static int ETT_PCIE_LFSR_META = -1;
+static int ETT_PCIE_LFSR_META_BLOCK = -1;
+static int ETT_PCIE_LFSR_META_BLOCK_CONTROL = -1;
+static int ETT_PCIE_LFSR_META_BLOCK_DATA_8B10B_META = -1;
+static int ETT_PCIE_LFSR_META_BLOCK_DATA_8B10B_META_BLOCK = -1;
 static int ETT_PCIE_FRAME = -1;
 static int ETT_PCIE_FRAME_ORDERED_SET_TS_DATA_RATE = -1;
 static int ETT_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL = -1;
@@ -1224,6 +1348,11 @@ static int * const ETT[] = {
         &ETT_PCIE_FLAGS,
         &ETT_PCIE_8B10B_META,
         &ETT_PCIE_8B10B_META_BLOCK,
+        &ETT_PCIE_LFSR_META,
+        &ETT_PCIE_LFSR_META_BLOCK,
+        &ETT_PCIE_LFSR_META_BLOCK_CONTROL,
+        &ETT_PCIE_LFSR_META_BLOCK_DATA_8B10B_META,
+        &ETT_PCIE_LFSR_META_BLOCK_DATA_8B10B_META_BLOCK,
         &ETT_PCIE_FRAME,
         &ETT_PCIE_FRAME_ORDERED_SET_TS_DATA_RATE,
         &ETT_PCIE_FRAME_ORDERED_SET_TS_TRAINING_CONTROL,
@@ -1406,6 +1535,7 @@ static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
     proto_tree_add_item(pcie_tree, HF_PCIE_RECORD, tvb, 0, 4, ENC_LITTLE_ENDIAN);
     proto_tree_add_item(pcie_tree, HF_PCIE_TIMESTAMP_NS, tvb, 4, 8, ENC_LITTLE_ENDIAN);
 
+    bool extra_metadata_present = false;
     uint32_t metadata_offset = 0;
     if (tvb_get_letohl(tvb, 12) != 0) {
         proto_tree_add_item(pcie_tree, HF_PCIE_LFSR, tvb, 12, 2, ENC_LITTLE_ENDIAN);
@@ -1413,7 +1543,6 @@ static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
         proto_item * metadata_info_tree_item = proto_tree_add_item(pcie_tree, HF_PCIE_METADATA_INFO, tvb, 14, 2, ENC_NA);
         proto_tree * metadata_info_tree = proto_item_add_subtree(metadata_info_tree_item, ETT_PCIE_METADATA_INFO);
 
-        bool extra_metadata_present = false;
         proto_tree_add_item_ret_boolean(metadata_info_tree, HF_PCIE_METADATA_INFO_EXTRA_METADATA_PRESENT, tvb, 14, 2, ENC_LITTLE_ENDIAN, &extra_metadata_present);
         proto_tree_add_item_ret_uint(metadata_info_tree, HF_PCIE_METADATA_INFO_METADATA_OFFSET, tvb, 14, 2, ENC_LITTLE_ENDIAN, &metadata_offset);
         proto_item_append_text(metadata_info_tree_item, ": Offset: %d", metadata_offset);
@@ -1500,6 +1629,176 @@ static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
 
                 proto_tree_add_item(meta_block_tree, HF_PCIE_8B10B_META_BLOCK_K_SYMBOLS, meta_tvb, offset, 1, ENC_LITTLE_ENDIAN);
                 proto_tree_add_item(meta_block_tree, HF_PCIE_8B10B_META_BLOCK_DISPARITY_POLARITY, meta_tvb, offset + 1, 1, ENC_LITTLE_ENDIAN);
+            }
+
+            bool skip_lfsr = false;
+            int extra_meta_len = 0;
+            int next_len = 0;
+            tvbuff_t * extra_meta_tvb = tvb_new_subset_remaining(meta_tvb, meta_len);
+            if (extra_metadata_present) {
+                uint16_t start = tvb_get_ntohs(extra_meta_tvb, 0);
+                extra_meta_len += 2;
+
+                if (start & 0x0001) {
+                    int len = 0;
+                    while (extra_meta_len < tvb_captured_length(extra_meta_tvb)) {
+                        uint16_t word = tvb_get_ntohs(extra_meta_tvb, extra_meta_len);
+                        extra_meta_len += 2;
+
+                        if ((word & 0x0003) == 0) {
+                            skip_lfsr = true;
+                            break;
+                        }
+
+                        len = word >> 4;
+                        if ((word & 0x0003) == 1) {
+                            next_len = len;
+                            break;
+                        }
+
+                        extra_meta_len += len;
+                    }
+                } else {
+                    skip_lfsr = true;
+                }
+
+                if (next_len == 0) {
+                    skip_lfsr = true;
+                }
+
+                proto_tree_add_item(pcie_tree, HF_PCIE_EXTRA_META, extra_meta_tvb, 0, extra_meta_len, ENC_NA);
+            }
+
+            tvbuff_t * lfsr_meta_tvb = tvb_new_subset_remaining(extra_meta_tvb, extra_meta_len);
+            if (tvb_captured_length(lfsr_meta_tvb) && !skip_lfsr) {
+
+                proto_item * lfsr_meta_tree_item = proto_tree_add_item(pcie_tree, HF_PCIE_LFSR_META, lfsr_meta_tvb, 0, -1, ENC_NA);
+                proto_tree * lfsr_meta_tree = proto_item_add_subtree(lfsr_meta_tree_item, ETT_PCIE_LFSR_META);
+
+                for (int lfsr_meta_offset = 0; lfsr_meta_offset < tvb_captured_length(lfsr_meta_tvb); ) {
+                    /* Each type is defined as follows:
+                     *
+                     * Type 1:
+                     *  - Idles After (32-bit, BE)
+                     *  - Optional: LFSR State (16-bit, BE)
+                     *  - Data Size / 8b10b Metadata Offset (16-bit, BE)
+                     *  - Data
+                     *  - 8b10b Metadata
+                     *
+                     * Type 2:
+                     *  - Idles After (64-bit, BE)
+                     *  - Optional: LFSR State (16-bit, BE)
+                     *  - Data Size / 8b10b Metadata Offset (16-bit, LE)
+                     *  - Data
+                     *  - 8b10b Metadata
+                     *
+                     * Type 3:
+                     *  - Idles After (64-bit, BE)
+                     *  - Electrical Idle State (16-bit, LE)
+                     *  - Optional: LFSR State (16-bit, BE)
+                     *  - Data Size / 8b10b Metadata Offset (16-bit, LE)
+                     *  - Data
+                     *  - 8b10b Metadata
+                     */
+
+                    uint8_t control = tvb_get_uint8(lfsr_meta_tvb, lfsr_meta_offset);
+                    uint8_t type = (control & 0x30) >> 4;
+                    bool lfsr_state_present = (control & 0x40) != 0;
+
+                    if (!(1 <= type && type <= 3)) {
+                        /* Invalid type */
+                        /* TODO: Add Expert Info */
+                        break;
+                    }
+
+                    /* Default config for Type 1 */
+                    bool idles_after_is_64_bit = false;
+                    bool electrical_idle_present = false;
+                    uint32_t data_len_encoding = ENC_BIG_ENDIAN;
+
+                    if (type >= 2) {
+                        idles_after_is_64_bit = true;
+                        data_len_encoding = ENC_LITTLE_ENDIAN;
+                    }
+
+                    if (type >= 3) {
+                        electrical_idle_present = true;
+                    }
+
+                    /* Get block length based on configuration */
+                    int lfsr_meta_block_len = 1;
+                    if (!idles_after_is_64_bit) {
+                        lfsr_meta_block_len += 4;
+                    } else {
+                        lfsr_meta_block_len += 8;
+                    }
+                    if (electrical_idle_present) {
+                        lfsr_meta_block_len += 2;
+                    }
+                    if (lfsr_state_present) {
+                        lfsr_meta_block_len += 2;
+                    }
+                    /* Peek at the data length */
+                    uint16_t data_len = 0;
+                    if (data_len_encoding == ENC_BIG_ENDIAN) {
+                        data_len = tvb_get_ntohs(lfsr_meta_tvb, lfsr_meta_offset + lfsr_meta_block_len);
+                    } else {
+                        data_len = tvb_get_letohs(lfsr_meta_tvb, lfsr_meta_offset + lfsr_meta_block_len);
+                    }
+                    lfsr_meta_block_len += 2;
+                    lfsr_meta_block_len += data_len;
+                    int eight_b_ten_b_meta_len = 2 * ((data_len + (8 - 1)) / 8);
+                    lfsr_meta_block_len += eight_b_ten_b_meta_len;
+
+                    /* Begin dissecting the metadata block */
+                    proto_item * lfsr_meta_block_tree_item = proto_tree_add_item(lfsr_meta_tree, HF_PCIE_LFSR_META_BLOCK, lfsr_meta_tvb, lfsr_meta_offset, lfsr_meta_block_len, ENC_NA);
+                    proto_tree * lfsr_meta_block_tree = proto_item_add_subtree(lfsr_meta_block_tree_item, ETT_PCIE_LFSR_META_BLOCK);
+
+                    proto_item * lfsr_meta_block_control_tree_item = proto_tree_add_item(lfsr_meta_block_tree, HF_PCIE_LFSR_META_BLOCK_CONTROL, lfsr_meta_tvb, lfsr_meta_offset, 1, ENC_BIG_ENDIAN);
+                    proto_tree * lfsr_meta_block_control_tree = proto_item_add_subtree(lfsr_meta_block_control_tree_item, ETT_PCIE_LFSR_META_BLOCK_CONTROL);
+                    proto_tree_add_item(lfsr_meta_block_control_tree, HF_PCIE_LFSR_META_BLOCK_CONTROL_LFSR_PRESENT, lfsr_meta_tvb, lfsr_meta_offset, 1, ENC_BIG_ENDIAN);
+                    proto_tree_add_item(lfsr_meta_block_control_tree, HF_PCIE_LFSR_META_BLOCK_CONTROL_TYPE, lfsr_meta_tvb, lfsr_meta_offset, 1, ENC_BIG_ENDIAN);
+                    proto_tree_add_item(lfsr_meta_block_control_tree, HF_PCIE_LFSR_META_BLOCK_CONTROL_LINK_SPEED, lfsr_meta_tvb, lfsr_meta_offset, 1, ENC_BIG_ENDIAN);
+                    lfsr_meta_offset += 1;
+
+                    if (!idles_after_is_64_bit) {
+                        proto_tree_add_item(lfsr_meta_block_tree, HF_PCIE_LFSR_META_BLOCK_IDLES_AFTER_32, lfsr_meta_tvb, lfsr_meta_offset, 4, ENC_BIG_ENDIAN);
+                        lfsr_meta_offset += 4;
+                    } else {
+                        proto_tree_add_item(lfsr_meta_block_tree, HF_PCIE_LFSR_META_BLOCK_IDLES_AFTER_64, lfsr_meta_tvb, lfsr_meta_offset, 8, ENC_BIG_ENDIAN);
+                        lfsr_meta_offset += 8;
+                    }
+
+                    if (electrical_idle_present) {
+                        proto_tree_add_item(lfsr_meta_block_tree, HF_PCIE_LFSR_META_BLOCK_ELECTRICAL_IDLE, lfsr_meta_tvb, lfsr_meta_offset, 2, ENC_LITTLE_ENDIAN);
+                        lfsr_meta_offset += 2;
+                    }
+
+                    if (lfsr_state_present) {
+                        proto_tree_add_item(lfsr_meta_block_tree, HF_PCIE_LFSR_META_BLOCK_LFSR_STATE, lfsr_meta_tvb, lfsr_meta_offset, 2, ENC_BIG_ENDIAN);
+                        lfsr_meta_offset += 2;
+                    }
+
+                    proto_tree_add_item(lfsr_meta_block_tree, HF_PCIE_LFSR_META_BLOCK_DATA_LEN, lfsr_meta_tvb, lfsr_meta_offset, 2, data_len_encoding);
+                    lfsr_meta_offset += 2;
+
+                    proto_tree_add_item(lfsr_meta_block_tree, HF_PCIE_LFSR_META_BLOCK_DATA, lfsr_meta_tvb, lfsr_meta_offset, data_len, ENC_NA);
+                    lfsr_meta_offset += data_len;
+
+                    /* Dissect 8b/10b metadata */
+                    tvbuff_t * lfsr_meta_8b10b_tvb = tvb_new_subset_length(lfsr_meta_tvb, lfsr_meta_offset, eight_b_ten_b_meta_len);
+                    proto_item * lfsr_meta_block_data_8b10b_meta_tree_item = proto_tree_add_item(lfsr_meta_block_tree, HF_PCIE_LFSR_META_BLOCK_DATA_8B10B_META, lfsr_meta_8b10b_tvb, 0, -1, ENC_NA);
+                    proto_tree * lfsr_meta_block_data_8b10b_meta_tree = proto_item_add_subtree(lfsr_meta_block_data_8b10b_meta_tree_item, ETT_PCIE_LFSR_META_BLOCK_DATA_8B10B_META);
+
+                    for (int offset = 0; offset < tvb_reported_length(lfsr_meta_8b10b_tvb); offset += 2) {
+                        proto_item * meta_block_tree_item = proto_tree_add_item(lfsr_meta_block_data_8b10b_meta_tree, HF_PCIE_LFSR_META_BLOCK_DATA_8B10B_META_BLOCK, lfsr_meta_8b10b_tvb, offset, 2, ENC_NA);
+                        proto_tree * meta_block_tree = proto_item_add_subtree(meta_block_tree_item, ETT_PCIE_LFSR_META_BLOCK_DATA_8B10B_META_BLOCK);
+
+                        proto_tree_add_item(meta_block_tree, HF_PCIE_LFSR_META_BLOCK_DATA_8B10B_META_BLOCK_K_SYMBOLS, lfsr_meta_8b10b_tvb, offset, 1, ENC_LITTLE_ENDIAN);
+                        proto_tree_add_item(meta_block_tree, HF_PCIE_LFSR_META_BLOCK_DATA_8B10B_META_BLOCK_DISPARITY_POLARITY, lfsr_meta_8b10b_tvb, offset + 1, 1, ENC_LITTLE_ENDIAN);
+                    }
+                    lfsr_meta_offset += tvb_reported_length(lfsr_meta_8b10b_tvb);
+                }
             }
         }
     }
