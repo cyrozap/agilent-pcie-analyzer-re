@@ -1253,6 +1253,7 @@ static expert_field EI_PCIE_FRAME_END_TAG_INVALID = EI_INIT;
 static expert_field EI_PCIE_DLLP_RESERVED_SET = EI_INIT;
 static expert_field EI_PCIE_DLLP_CRC_INVALID = EI_INIT;
 
+static expert_field EI_PCIE_TLP_RESERVED_FIELD_NONZERO = EI_INIT;
 static expert_field EI_PCIE_TLP_CPL_STATUS_NOT_SUCCESSFUL = EI_INIT;
 static expert_field EI_PCIE_TLP_ECRC_INVALID = EI_INIT;
 
@@ -1294,6 +1295,10 @@ static ei_register_info EI_PCIE_DLLP[] = {
 };
 
 static ei_register_info EI_PCIE_TLP[] = {
+    { &EI_PCIE_TLP_RESERVED_FIELD_NONZERO,
+        { "pcie.tlp.reserved_field_nonzero", PI_PROTOCOL, PI_WARN,
+            "Reserved field is non-zero", EXPFILL }
+    },
     { &EI_PCIE_TLP_CPL_STATUS_NOT_SUCCESSFUL,
         { "pcie.tlp.cpl.status_not_successful", PI_RESPONSE_CODE, PI_WARN,
             "Completion Status is not Successful Completion (SC)", EXPFILL }
@@ -1348,6 +1353,19 @@ static bool is_config_request(uint32_t fmt_type) {
 
 static bool is_completion(uint32_t fmt_type) {
     return (fmt_type & 0b10111110) == 0b00001010;
+}
+
+/* Does not contain or refer to data payloads (Cpl, CplLk, and Msg) */
+static bool is_no_data(uint32_t fmt_type) {
+    /* Cpl and CplLk */
+    if ((fmt_type & 0b11111110) == 0b00001010)
+        return true;
+
+    /* Msg (without data) */
+    if ((fmt_type & 0b11111000) == 0b00110000)
+        return true;
+
+    return false;
 }
 
 // Borrowed from epan/dissectors/packet-btbredr_rf.c
@@ -1807,8 +1825,18 @@ static int dissect_pcie_tlp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree,
     proto_tree_add_item(dw0_tree, HF_PCIE_TLP_AT, tvb, 1, 3, ENC_BIG_ENDIAN);
 
     uint32_t payload_len = 0;
-    proto_tree_add_item_ret_uint(dw0_tree, HF_PCIE_TLP_LENGTH, tvb, 1, 3, ENC_BIG_ENDIAN, &payload_len);
-    if (payload_len > 0) {
+    if (is_no_data(tlp_fmt_type)) {
+        /* For TLPs that do not contain or refer to data payloads, the length field is reserved. */
+        uint32_t reserved = 0;
+        proto_item * length_item = proto_tree_add_item_ret_uint(dw0_tree, HF_PCIE_TLP_LENGTH, tvb, 1, 3, ENC_BIG_ENDIAN, &reserved);
+        if (reserved != 0) {
+            expert_add_info(pinfo, length_item, &EI_PCIE_TLP_RESERVED_FIELD_NONZERO);
+        }
+    } else {
+        /* For all other TLPs, we need to correct the length since a zero value in this field represents 1024 DW.
+         * FIXME: When payload_len is 1024, the field mask causes the field to still report a length of zero. */
+        payload_len = extract_length_from_tlp_dw0(tvb_get_ntohl(tvb, 0));
+        proto_tree_add_uint(dw0_tree, HF_PCIE_TLP_LENGTH, tvb, 1, 3, payload_len);
         proto_item_append_text(dw0_tree_item, ", %d dw", payload_len);
     }
 
