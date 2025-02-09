@@ -2177,8 +2177,9 @@ static void dissect_tlp_cpl(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree,
     bool bcm = false;
     proto_tree_add_item_ret_boolean(status_bcm_byte_count_tree, HF_PCIE_TLP_CPL_BCM, tvb, 6, 2, ENC_BIG_ENDIAN, &bcm);
 
-    uint32_t byte_count = 0;
-    proto_tree_add_item_ret_uint(status_bcm_byte_count_tree, HF_PCIE_TLP_CPL_BYTE_COUNT, tvb, 6, 2, ENC_BIG_ENDIAN, &byte_count);
+    /* FIXME: When byte_count is 4096, the field mask causes the field to still report a length of zero. */
+    uint32_t byte_count = extract_byte_count_from_cpl_dw1(tvb_get_ntohl(tvb, 4*1));
+    proto_tree_add_uint(status_bcm_byte_count_tree, HF_PCIE_TLP_CPL_BYTE_COUNT, tvb, 6, 2, byte_count);
 
     proto_item_set_text(status_bcm_byte_count_item, "Completion Status: %s, BCM: %s, Byte Count: %d", status_str, bcm ? "True" : "False", byte_count);
 
