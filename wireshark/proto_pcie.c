@@ -2,7 +2,7 @@
 
 /*
  *  proto_pcie.c - PCIe dissector for Wireshark.
- *  Copyright (C) 2023-2024  Forest Crossman <cyrozap@gmail.com>
+ *  Copyright (C) 2023-2025  Forest Crossman <cyrozap@gmail.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -40,7 +40,8 @@ typedef struct tlp_bdf_s {
 
 typedef struct tlp_transaction_s {
     uint32_t req_frame;
-    uint32_t cpl_frame;
+    wmem_list_t * cpl_frames;
+    uint32_t req_tlp_fmt_type;
     nstime_t req_time;
 } tlp_transaction_t;
 
@@ -551,6 +552,7 @@ static int HF_PCIE_TLP_ECRC = -1;
 static int HF_PCIE_TLP_COMPLETION_IN = -1;
 static int HF_PCIE_TLP_REQUEST_IN = -1;
 static int HF_PCIE_TLP_COMPLETION_TIME = -1;
+static int HF_PCIE_TLP_ADDITIONAL_COMPLETION_IN = -1;
 
 static hf_register_info HF_PCIE[] = {
     { &HF_PCIE_RECORD,
@@ -1186,6 +1188,12 @@ static hf_register_info HF_PCIE_TLP[] = {
         NULL, 0x0,
         NULL, HFILL }
     },
+    { &HF_PCIE_TLP_ADDITIONAL_COMPLETION_IN,
+        { "Additional Completion In", "pcie.tlp.additional_completion_in",
+        FT_FRAMENUM, BASE_NONE,
+        FRAMENUM_TYPE(FT_FRAMENUM_NONE), 0x0,
+        NULL, HFILL }
+    },
 };
 
 static int ETT_PCIE = -1;
@@ -1312,6 +1320,16 @@ static uint32_t extract_length_from_tlp_dw0(uint32_t tlp_dw0) {
     return length;
 }
 
+static uint32_t extract_byte_count_from_cpl_dw1(uint32_t cpl_dw1) {
+    uint32_t length = cpl_dw1 & ((1 << 12) - 1);
+
+    if (length == 0) {
+        length = 1 << 12;
+    }
+
+    return length;
+}
+
 static bool is_posted_request(uint32_t fmt_type) {
     /* Memory Write */
     if ((fmt_type & 0b11011111) == 0b01000000)
@@ -1322,6 +1340,10 @@ static bool is_posted_request(uint32_t fmt_type) {
         return true;
 
     return false;
+}
+
+static bool is_config_request(uint32_t fmt_type) {
+    return (fmt_type & 0b10111110) == 0b00000100;
 }
 
 static bool is_completion(uint32_t fmt_type) {
@@ -1855,17 +1877,47 @@ static int dissect_pcie_tlp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree,
             /* This is a request */
             tlp_trans = wmem_new(wmem_file_scope(), tlp_transaction_t);
             tlp_trans->req_frame = pinfo->num;
-            tlp_trans->cpl_frame = 0;
+            tlp_trans->cpl_frames = NULL;
+            tlp_trans->req_tlp_fmt_type = tlp_fmt_type;
             tlp_trans->req_time = pinfo->fd->abs_ts;
 
             wmem_map_insert(tlp_info->pdus_by_txid, GUINT_TO_POINTER(tlp_transaction_id), (void *)tlp_trans);
             wmem_map_insert(tlp_info->pdus_by_record_num, GUINT_TO_POINTER(pinfo->num), (void *)tlp_trans);
         } else if (is_completion(tlp_fmt_type)) {
             /* This is a completion */
-            tlp_trans = (tlp_transaction_t *)wmem_map_remove(tlp_info->pdus_by_txid, GUINT_TO_POINTER(tlp_transaction_id));
+            tlp_trans = (tlp_transaction_t *)wmem_map_lookup(tlp_info->pdus_by_txid, GUINT_TO_POINTER(tlp_transaction_id));
             if (tlp_trans) {
-                tlp_trans->cpl_frame = pinfo->num;
                 wmem_map_insert(tlp_info->pdus_by_record_num, GUINT_TO_POINTER(pinfo->num), (void *)tlp_trans);
+
+                if (!tlp_trans->cpl_frames) {
+                    tlp_trans->cpl_frames = wmem_list_new(wmem_file_scope());
+                }
+                wmem_list_append(tlp_trans->cpl_frames, GUINT_TO_POINTER(pinfo->num));
+
+                if (is_config_request(tlp_trans->req_tlp_fmt_type)) {
+                    /* This is the last completion for this TX ID */
+                    wmem_map_remove(tlp_info->pdus_by_txid, GUINT_TO_POINTER(tlp_transaction_id));
+                }
+
+                uint32_t cpl_dw1 = tvb_get_ntohl(tvb, 4*1);
+
+                /* Peek at the completion status. If this is not a successful completion, we need to end the transaction. */
+                if (((cpl_dw1 >> 13) & 0x7) != 0b000) {
+                    /* This is the last completion for this TX ID */
+                    wmem_map_remove(tlp_info->pdus_by_txid, GUINT_TO_POINTER(tlp_transaction_id));
+                }
+
+                /* Peek at the byte count and lowest two bits of the lower address to get the expected DW count.
+                 * Compare with the actual DW count to determine whether or not this is the last completion TLP. */
+                uint32_t byte_count = extract_byte_count_from_cpl_dw1(cpl_dw1);
+                uint32_t cpl_dw2 = tvb_get_ntohl(tvb, 4*2);
+                uint32_t lower_address = cpl_dw2 & 0x7F;
+                uint32_t dw_byte_offset = lower_address & 0x03;
+                uint32_t expected_dw_count = (dw_byte_offset + byte_count + 3) / 4;
+                if (payload_len >= expected_dw_count) {
+                    /* This is the last completion for this TX ID */
+                    wmem_map_remove(tlp_info->pdus_by_txid, GUINT_TO_POINTER(tlp_transaction_id));
+                }
             }
         }
     } else {
@@ -1912,9 +1964,11 @@ static int dissect_pcie_tlp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree,
     if (tlp_trans) {
         if ((!is_completion(tlp_fmt_type)) && (!is_posted_request(tlp_fmt_type))) {
             /* This is a request */
-            if (tlp_trans->cpl_frame) {
-                proto_item * it = proto_tree_add_uint(tlp_tree, HF_PCIE_TLP_COMPLETION_IN, tvb, 0, 0, tlp_trans->cpl_frame);
-                proto_item_set_generated(it);
+            if (tlp_trans->cpl_frames) {
+                for (wmem_list_frame_t *frame = wmem_list_head(tlp_trans->cpl_frames); frame != NULL; frame = wmem_list_frame_next(frame)) {
+                    proto_item * it = proto_tree_add_uint(tlp_tree, HF_PCIE_TLP_COMPLETION_IN, tvb, 0, 0, GPOINTER_TO_UINT(wmem_list_frame_data(frame)));
+                    proto_item_set_generated(it);
+                }
             }
         } else if (is_completion(tlp_fmt_type)) {
             /* This is a completion */
@@ -1929,6 +1983,21 @@ static int dissect_pcie_tlp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree,
 
                 it = proto_tree_add_time(tlp_tree, HF_PCIE_TLP_COMPLETION_TIME, tvb, 0, 0, &ns);
                 proto_item_set_generated(it);
+            }
+
+            if (tlp_trans->cpl_frames) {
+                /* Add links to related completions */
+                for (wmem_list_frame_t *frame = wmem_list_head(tlp_trans->cpl_frames); frame != NULL; frame = wmem_list_frame_next(frame)) {
+                    uint32_t frame_num = GPOINTER_TO_UINT(wmem_list_frame_data(frame));
+
+                    if (frame_num == pinfo->num) {
+                        /* Don't link to self */
+                        continue;
+                    }
+
+                    proto_item * it = proto_tree_add_uint(tlp_tree, HF_PCIE_TLP_ADDITIONAL_COMPLETION_IN, tvb, 0, 0, frame_num);
+                    proto_item_set_generated(it);
+                }
             }
         }
     }
