@@ -28,7 +28,7 @@ use nom::sequence::tuple;
 use nom::IResult;
 
 fn u32_hi_lo_to_u64(hi: u32, lo: u32) -> u64 {
-    (<u32 as Into<u64>>::into(hi).checked_shl(32).unwrap()) | <u32 as Into<u64>>::into(lo)
+    (<u32 as Into<u64>>::into(hi).checked_shl(u32::BITS).unwrap()) | <u32 as Into<u64>>::into(lo)
 }
 
 fn le_u32_typed(input: &[u8]) -> IResult<&[u8], u32> {
