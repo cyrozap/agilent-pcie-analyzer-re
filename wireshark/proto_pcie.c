@@ -1481,7 +1481,12 @@ static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
     tvbuff_t * frame_tvb;
     if (metadata_offset > 0) {
         frame_tvb = tvb_new_subset_length(tvb, PCIE_CAPTURE_HEADER_SIZE, metadata_offset);
+    } else {
+        frame_tvb = tvb_new_subset_remaining(tvb, PCIE_CAPTURE_HEADER_SIZE);
+    }
+    call_dissector(PCIE_FRAME_HANDLE, frame_tvb, pinfo, tree);
 
+    if (metadata_offset > 0) {
         int meta_len = 2 * ((metadata_offset + (8 - 1)) / 8);
         if (PCIE_CAPTURE_HEADER_SIZE + metadata_offset + meta_len <= tvb_captured_length(tvb)) {
             proto_item * meta_tree_item = proto_tree_add_item(pcie_tree, HF_PCIE_8B10B_META, tvb, PCIE_CAPTURE_HEADER_SIZE + metadata_offset, meta_len, ENC_NA);
@@ -1495,10 +1500,7 @@ static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
                 proto_tree_add_item(meta_block_tree, HF_PCIE_8B10B_META_BLOCK_DISPARITY_POLARITY, tvb, PCIE_CAPTURE_HEADER_SIZE + metadata_offset + offset + 1, 1, ENC_LITTLE_ENDIAN);
             }
         }
-    } else {
-        frame_tvb = tvb_new_subset_remaining(tvb, PCIE_CAPTURE_HEADER_SIZE);
     }
-    call_dissector(PCIE_FRAME_HANDLE, frame_tvb, pinfo, tree);
 
     return tvb_captured_length(tvb);
 }
