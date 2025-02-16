@@ -1486,8 +1486,9 @@ static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
     }
     call_dissector(PCIE_FRAME_HANDLE, frame_tvb, pinfo, tree);
 
-    tvbuff_t * meta_tvb = tvb_new_subset_remaining(tvb, PCIE_CAPTURE_HEADER_SIZE + metadata_offset);
-    if (tvb_captured_length(meta_tvb) > 0) {
+    if (metadata_offset > 0) {
+        tvbuff_t * meta_tvb = tvb_new_subset_remaining(tvb, PCIE_CAPTURE_HEADER_SIZE + metadata_offset);
+
         int meta_len = 2 * ((metadata_offset + (8 - 1)) / 8);
         if (meta_len <= tvb_captured_length(meta_tvb)) {
             proto_item * meta_tree_item = proto_tree_add_item(pcie_tree, HF_PCIE_8B10B_META, meta_tvb, 0, meta_len, ENC_NA);
