@@ -1486,18 +1486,19 @@ static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
     }
     call_dissector(PCIE_FRAME_HANDLE, frame_tvb, pinfo, tree);
 
-    if (metadata_offset > 0) {
+    tvbuff_t * meta_tvb = tvb_new_subset_remaining(tvb, PCIE_CAPTURE_HEADER_SIZE + metadata_offset);
+    if (tvb_captured_length(meta_tvb) > 0) {
         int meta_len = 2 * ((metadata_offset + (8 - 1)) / 8);
-        if (PCIE_CAPTURE_HEADER_SIZE + metadata_offset + meta_len <= tvb_captured_length(tvb)) {
-            proto_item * meta_tree_item = proto_tree_add_item(pcie_tree, HF_PCIE_8B10B_META, tvb, PCIE_CAPTURE_HEADER_SIZE + metadata_offset, meta_len, ENC_NA);
+        if (meta_len <= tvb_captured_length(meta_tvb)) {
+            proto_item * meta_tree_item = proto_tree_add_item(pcie_tree, HF_PCIE_8B10B_META, meta_tvb, 0, meta_len, ENC_NA);
             proto_tree * meta_tree = proto_item_add_subtree(meta_tree_item, ETT_PCIE_8B10B_META);
 
             for (int offset = 0; offset < meta_len; offset += 2) {
-                proto_item * meta_block_tree_item = proto_tree_add_item(meta_tree, HF_PCIE_8B10B_META_BLOCK, tvb, PCIE_CAPTURE_HEADER_SIZE + metadata_offset + offset, 2, ENC_NA);
+                proto_item * meta_block_tree_item = proto_tree_add_item(meta_tree, HF_PCIE_8B10B_META_BLOCK, meta_tvb, offset, 2, ENC_NA);
                 proto_tree * meta_block_tree = proto_item_add_subtree(meta_block_tree_item, ETT_PCIE_8B10B_META_BLOCK);
 
-                proto_tree_add_item(meta_block_tree, HF_PCIE_8B10B_META_BLOCK_K_SYMBOLS, tvb, PCIE_CAPTURE_HEADER_SIZE + metadata_offset + offset, 1, ENC_LITTLE_ENDIAN);
-                proto_tree_add_item(meta_block_tree, HF_PCIE_8B10B_META_BLOCK_DISPARITY_POLARITY, tvb, PCIE_CAPTURE_HEADER_SIZE + metadata_offset + offset + 1, 1, ENC_LITTLE_ENDIAN);
+                proto_tree_add_item(meta_block_tree, HF_PCIE_8B10B_META_BLOCK_K_SYMBOLS, meta_tvb, offset, 1, ENC_LITTLE_ENDIAN);
+                proto_tree_add_item(meta_block_tree, HF_PCIE_8B10B_META_BLOCK_DISPARITY_POLARITY, meta_tvb, offset + 1, 1, ENC_LITTLE_ENDIAN);
             }
         }
     }
