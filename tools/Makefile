@@ -2,7 +2,7 @@ TARGETS=agilent_pad.py
 
 all: $(TARGETS)
 
-%.py: %.ksy
+%.py: ../doc/%.ksy
 	kaitai-struct-compiler -t python $<
 
 clean:
