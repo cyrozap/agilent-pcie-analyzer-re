@@ -14,9 +14,8 @@
 ### Procedure
 
 1. Install dependencies.
-2. `cd tools`
-3. Run `make` to generate the parser code used by `cap_tool.py`.
-4. Run `./cap_tool.py` on a `*.pad` protocol analyzer data file.
+2. Run `make` to generate the parser code used by `cap_tool.py`.
+3. Run `./cap_tool.py` on a `*.pad` protocol analyzer data file.
 
 
 [ksc]: https://github.com/kaitai-io/kaitai_struct_compiler
