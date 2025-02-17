@@ -25,6 +25,7 @@
 
 #include "proto_nettlp.h"
 #include "proto_pcie.h"
+#include "proto_pcie_capture.h"
 
 
 char const plugin_version[] = "0.1.0";
@@ -34,11 +35,13 @@ uint32_t const plugin_want_minor = PLUGIN_WANT_MINOR;
 
 static void proto_register_all(void) {
     proto_register_pcie();
+    proto_register_pcie_capture();
     proto_register_nettlp();
 }
 
 static void proto_reg_handoff_all(void) {
     proto_reg_handoff_pcie();
+    proto_reg_handoff_pcie_capture();
     proto_reg_handoff_nettlp();
 }
 

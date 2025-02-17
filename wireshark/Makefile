@@ -30,7 +30,7 @@ all: pcie.so
 %.o: %.c
 	$(CC) $(CFLAGS) -D PLUGIN_WANT_MAJOR=$(PLUGIN_WANT_MAJOR) -D PLUGIN_WANT_MINOR=$(PLUGIN_WANT_MINOR) -c -o $@ $<
 
-pcie.so: plugin.o proto_pcie.o proto_nettlp.o
+pcie.so: plugin.o proto_pcie.o proto_pcie_capture.o proto_nettlp.o
 	$(CC) $(CFLAGS) $(LDFLAGS) -shared -o $@ $^
 
 install: pcie.so
