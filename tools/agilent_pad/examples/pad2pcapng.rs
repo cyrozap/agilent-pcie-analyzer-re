@@ -156,6 +156,7 @@ fn main() {
         pcapng_writer.write_all(&if_len.to_le_bytes()).unwrap();
     }
 
+    let mut block_data: Vec<u8> = Vec::with_capacity(4 * 1024);
     for record in pad_file.records {
         assert_eq!(record.count, 1, "record \"count\" field is not equal to 1");
 
@@ -167,7 +168,7 @@ fn main() {
                 .write_all(&0x00000006_u32.to_le_bytes())
                 .unwrap();
 
-            let mut block_data: Vec<u8> = Vec::with_capacity(4 * 1024);
+            block_data.clear();
             block_data.write_all(&0_u32.to_le_bytes()).unwrap();
             block_data
                 .write_all(
