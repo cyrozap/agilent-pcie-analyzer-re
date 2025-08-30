@@ -322,12 +322,11 @@ pub struct RecordReader {
 
 impl RecordReader {
     fn get_data_for_record(&mut self, record: &Record, exclude_metadata: bool) -> &[u8] {
-        self.data_reader
-            .seek_relative(
-                <u64 as TryInto<i64>>::try_into(record.data_offset).unwrap()
-                    - self.curr_data_offset,
-            )
-            .unwrap();
+        let seek_offset =
+            <u64 as TryInto<i64>>::try_into(record.data_offset).unwrap() - self.curr_data_offset;
+        if seek_offset != 0 {
+            self.data_reader.seek_relative(seek_offset).unwrap();
+        }
 
         let data_read_len = if exclude_metadata && record.metadata_offset > 0 {
             record.metadata_offset.into()
