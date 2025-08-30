@@ -317,10 +317,11 @@ impl Iterator for Records {
 pub struct RecordReader {
     data_reader: BufReader<File>,
     curr_data_offset: i64,
+    buffer: Vec<u8>,
 }
 
 impl RecordReader {
-    fn get_data_for_record(&mut self, record: &Record, exclude_metadata: bool) -> Vec<u8> {
+    fn get_data_for_record(&mut self, record: &Record, exclude_metadata: bool) -> &[u8] {
         self.data_reader
             .seek_relative(
                 <u64 as TryInto<i64>>::try_into(record.data_offset).unwrap()
@@ -334,21 +335,21 @@ impl RecordReader {
             record.data_len.try_into().unwrap()
         };
 
-        let mut buf: Vec<u8> = vec![0; data_read_len];
-
-        self.data_reader.read_exact(buf.as_mut_slice()).unwrap();
+        self.buffer.clear();
+        self.buffer.resize(data_read_len, 0);
+        self.data_reader.read_exact(&mut self.buffer).unwrap();
 
         self.curr_data_offset = <u64 as TryInto<i64>>::try_into(record.data_offset).unwrap()
-            + <usize as TryInto<i64>>::try_into(buf.len()).unwrap();
+            + <usize as TryInto<i64>>::try_into(self.buffer.len()).unwrap();
 
-        buf
+        &self.buffer
     }
 
-    pub fn get_data_for_record_without_metadata(&mut self, record: &Record) -> Vec<u8> {
+    pub fn get_data_for_record_without_metadata(&mut self, record: &Record) -> &[u8] {
         self.get_data_for_record(record, true)
     }
 
-    pub fn get_all_data_for_record(&mut self, record: &Record) -> Vec<u8> {
+    pub fn get_all_data_for_record(&mut self, record: &Record) -> &[u8] {
         self.get_data_for_record(record, false)
     }
 }
@@ -397,6 +398,7 @@ impl PadFile {
             record_reader: RecordReader {
                 data_reader,
                 curr_data_offset: 0,
+                buffer: Vec::with_capacity(4096),
             },
         })
     }
