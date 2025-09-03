@@ -42,6 +42,14 @@ fn pad_to_32_bits(data: &mut Vec<u8>) {
     data.resize(data.len() + padding_count, 0);
 }
 
+fn write_pcapng_block<W: Write>(writer: &mut W, block_type: u32, block_data: &[u8]) {
+    let block_len: u32 = u32::try_from(block_data.len()).unwrap() + 4 * 3;
+    writer.write_all(&block_type.to_le_bytes()).unwrap();
+    writer.write_all(&block_len.to_le_bytes()).unwrap();
+    writer.write_all(block_data).unwrap();
+    writer.write_all(&block_len.to_le_bytes()).unwrap();
+}
+
 fn main() {
     let args = Args::parse();
 
@@ -80,28 +88,17 @@ fn main() {
 
     // Section Header Block
     {
-        pcapng_writer
-            .write_all(&0x0a0d0d0a_u32.to_le_bytes())
-            .unwrap();
-
         let mut sh_data: Vec<u8> = Vec::new();
         sh_data.write_all(&0x1a2b3c4d_u32.to_le_bytes()).unwrap();
         sh_data.write_all(&0x0001_u16.to_le_bytes()).unwrap();
         sh_data.write_all(&0x0000_u16.to_le_bytes()).unwrap();
         sh_data.write_all(&(-1_i64).to_le_bytes()).unwrap();
 
-        let sh_len: u32 = <usize as TryInto<u32>>::try_into(sh_data.len()).unwrap() + 4 * 3;
-        pcapng_writer.write_all(&sh_len.to_le_bytes()).unwrap();
-        pcapng_writer.write_all(&sh_data).unwrap();
-        pcapng_writer.write_all(&sh_len.to_le_bytes()).unwrap();
+        write_pcapng_block(&mut pcapng_writer, 0x0a0d0d0a, &sh_data);
     }
 
     // Interface Description Block
     {
-        pcapng_writer
-            .write_all(&0x00000001_u32.to_le_bytes())
-            .unwrap();
-
         let mut if_data: Vec<u8> = Vec::new();
         if_data.write_all(&(147 + 11_u16).to_le_bytes()).unwrap();
         if_data.write_all(&0x0000_u16.to_le_bytes()).unwrap();
@@ -145,10 +142,7 @@ fn main() {
         if_data.write_all(&0_u16.to_le_bytes()).unwrap();
         if_data.write_all(&0_u16.to_le_bytes()).unwrap();
 
-        let if_len: u32 = <usize as TryInto<u32>>::try_into(if_data.len()).unwrap() + 4 * 3;
-        pcapng_writer.write_all(&if_len.to_le_bytes()).unwrap();
-        pcapng_writer.write_all(&if_data).unwrap();
-        pcapng_writer.write_all(&if_len.to_le_bytes()).unwrap();
+        write_pcapng_block(&mut pcapng_writer, 0x00000001, &if_data);
     }
 
     let mut block_data: Vec<u8> = Vec::with_capacity(4 * 1024);
@@ -159,10 +153,6 @@ fn main() {
 
         // Enhanced Packet Block
         {
-            pcapng_writer
-                .write_all(&0x00000006_u32.to_le_bytes())
-                .unwrap();
-
             block_data.clear();
             block_data.write_all(&0_u32.to_le_bytes()).unwrap();
             block_data
@@ -249,11 +239,7 @@ fn main() {
                 block_data.write_all(&0_u16.to_le_bytes()).unwrap();
             }
 
-            let block_len: u32 =
-                <usize as TryInto<u32>>::try_into(block_data.len()).unwrap() + 4 * 3;
-            pcapng_writer.write_all(&block_len.to_le_bytes()).unwrap();
-            pcapng_writer.write_all(&block_data).unwrap();
-            pcapng_writer.write_all(&block_len.to_le_bytes()).unwrap();
+            write_pcapng_block(&mut pcapng_writer, 0x00000006, &block_data);
         }
     }
 }
