@@ -37,6 +37,11 @@ struct Args {
     pcapng_file: String,
 }
 
+fn pad_to_32_bits(data: &mut Vec<u8>) {
+    let padding_count = data.len().next_multiple_of(4) - data.len();
+    data.resize(data.len() + padding_count, 0);
+}
+
 fn main() {
     let args = Args::parse();
 
@@ -113,12 +118,7 @@ fn main() {
             )
             .unwrap();
         if_data.write_all(&if_name).unwrap();
-        let padding_count = if if_data.len() % 4 != 0 {
-            4 - (if_data.len() % 4)
-        } else {
-            0
-        };
-        if_data.resize(if_data.len() + padding_count, 0);
+        pad_to_32_bits(&mut if_data);
 
         /*
         if_data.append(&mut (8 as u16).to_le_bytes().to_vec());
@@ -140,12 +140,7 @@ fn main() {
             )
             .unwrap();
         if_data.write_all(&if_hardware).unwrap();
-        let padding_count = if if_data.len() % 4 != 0 {
-            4 - (if_data.len() % 4)
-        } else {
-            0
-        };
-        if_data.resize(if_data.len() + padding_count, 0);
+        pad_to_32_bits(&mut if_data);
 
         if_data.write_all(&0_u16.to_le_bytes()).unwrap();
         if_data.write_all(&0_u16.to_le_bytes()).unwrap();
@@ -209,12 +204,7 @@ fn main() {
 
             // Record data
             block_data.write_all(&record_data).unwrap();
-            let padding_count = if block_data.len() % 4 != 0 {
-                4 - (block_data.len() % 4)
-            } else {
-                0
-            };
-            block_data.resize(block_data.len() + padding_count, 0);
+            pad_to_32_bits(&mut block_data);
 
             if (record.number == header.trigger_record_number)
                 || (record.number == header.first_record_number
@@ -253,12 +243,7 @@ fn main() {
                     )
                     .unwrap();
                 block_data.write_all(&packet_comment).unwrap();
-                let padding_count = if block_data.len() % 4 != 0 {
-                    4 - (block_data.len() % 4)
-                } else {
-                    0
-                };
-                block_data.resize(block_data.len() + padding_count, 0);
+                pad_to_32_bits(&mut block_data);
 
                 block_data.write_all(&0_u16.to_le_bytes()).unwrap();
                 block_data.write_all(&0_u16.to_le_bytes()).unwrap();
