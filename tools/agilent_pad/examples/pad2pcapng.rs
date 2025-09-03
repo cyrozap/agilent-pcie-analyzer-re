@@ -58,6 +58,12 @@ fn write_string_option(data: &mut Vec<u8>, option_code: u16, value: &[u8]) {
     pad_to_32_bits(data);
 }
 
+fn format_ns_duration(ns: u64) -> String {
+    let secs = ns / 1_000_000_000;
+    let frac_ns = ns % 1_000_000_000;
+    format!("{}.{:09}", secs, frac_ns)
+}
+
 fn main() {
     let args = Args::parse();
 
@@ -195,21 +201,17 @@ fn main() {
                 let packet_comment = match header.timestamps_ns.trigger.cmp(&record.timestamp_ns) {
                     Ordering::Less => {
                         let difference_ns = record.timestamp_ns - header.timestamps_ns.trigger;
-                        let ts_ns_int = difference_ns / 1000000000;
-                        let ts_ns_frac = difference_ns % 1000000000;
                         format!(
-                            "Triggered {}.{:09}s before this record.",
-                            ts_ns_int, ts_ns_frac
+                            "Triggered {}s before this record.",
+                            format_ns_duration(difference_ns)
                         )
                     }
                     Ordering::Equal => "Triggered on this record.".to_string(),
                     Ordering::Greater => {
                         let difference_ns = header.timestamps_ns.trigger - record.timestamp_ns;
-                        let ts_ns_int = difference_ns / 1000000000;
-                        let ts_ns_frac = difference_ns % 1000000000;
                         format!(
-                            "Triggered {}.{:09}s after this record.",
-                            ts_ns_int, ts_ns_frac
+                            "Triggered {}s after this record.",
+                            format_ns_duration(difference_ns)
                         )
                     }
                 }
