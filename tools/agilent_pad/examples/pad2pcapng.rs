@@ -50,6 +50,14 @@ fn write_pcapng_block<W: Write>(writer: &mut W, block_type: u32, block_data: &[u
     writer.write_all(&block_len.to_le_bytes()).unwrap();
 }
 
+fn write_string_option(data: &mut Vec<u8>, option_code: u16, value: &[u8]) {
+    data.write_all(&option_code.to_le_bytes()).unwrap();
+    data.write_all(&u16::try_from(value.len()).unwrap().to_le_bytes())
+        .unwrap();
+    data.write_all(value).unwrap();
+    pad_to_32_bits(data);
+}
+
 fn main() {
     let args = Args::parse();
 
@@ -106,16 +114,7 @@ fn main() {
 
         // Options
         let if_name = header.port_id.clone().into_bytes();
-        if_data.write_all(&2_u16.to_le_bytes()).unwrap();
-        if_data
-            .write_all(
-                &<usize as TryInto<u16>>::try_into(if_name.len())
-                    .unwrap()
-                    .to_le_bytes(),
-            )
-            .unwrap();
-        if_data.write_all(&if_name).unwrap();
-        pad_to_32_bits(&mut if_data);
+        write_string_option(&mut if_data, 2, &if_name);
 
         /*
         if_data.append(&mut (8 as u16).to_le_bytes().to_vec());
@@ -128,16 +127,7 @@ fn main() {
         if_data.write_all(&9_u32.to_le_bytes()).unwrap();
 
         let if_hardware = header.module_type.clone().into_bytes();
-        if_data.write_all(&15_u16.to_le_bytes()).unwrap();
-        if_data
-            .write_all(
-                &<usize as TryInto<u16>>::try_into(if_hardware.len())
-                    .unwrap()
-                    .to_le_bytes(),
-            )
-            .unwrap();
-        if_data.write_all(&if_hardware).unwrap();
-        pad_to_32_bits(&mut if_data);
+        write_string_option(&mut if_data, 15, &if_hardware);
 
         if_data.write_all(&0_u16.to_le_bytes()).unwrap();
         if_data.write_all(&0_u16.to_le_bytes()).unwrap();
@@ -224,16 +214,7 @@ fn main() {
                     }
                 }
                 .into_bytes();
-                block_data.write_all(&1_u16.to_le_bytes()).unwrap();
-                block_data
-                    .write_all(
-                        &<usize as TryInto<u16>>::try_into(packet_comment.len())
-                            .unwrap()
-                            .to_le_bytes(),
-                    )
-                    .unwrap();
-                block_data.write_all(&packet_comment).unwrap();
-                pad_to_32_bits(&mut block_data);
+                write_string_option(&mut block_data, 1, &packet_comment);
 
                 block_data.write_all(&0_u16.to_le_bytes()).unwrap();
                 block_data.write_all(&0_u16.to_le_bytes()).unwrap();
