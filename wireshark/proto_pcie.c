@@ -21,6 +21,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include <epan/address.h>
 #include <epan/conversation.h>
 #include <epan/crc32-tvb.h>
 #include <epan/expert.h>
@@ -28,6 +29,7 @@
 #include <epan/proto.h>
 #include <wiretap/wtap.h>
 #include <wsutil/crc32.h>
+#include <wsutil/wmem/wmem_strutl.h>
 
 #include "proto_pcie.h"
 
@@ -1590,7 +1592,7 @@ static int dissect_pcie_tlp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree,
 
     uint64_t tlp_transaction_id = (tlp_tag << 16) | req_id;
 
-    conversation_t * conversation = find_or_create_conversation(pinfo);
+    conversation_t * conversation = find_or_create_conversation_by_id(pinfo, CONVERSATION_NONE, 0);
     tlp_conv_info_t * tlp_info = (tlp_conv_info_t *)conversation_get_proto_data(conversation, PROTO_PCIE_TLP);
     tlp_transaction_t * tlp_trans = NULL;
     if (!tlp_info) {
@@ -1759,8 +1761,8 @@ static void dissect_tlp_req_id_and_tag70(tvbuff_t *tvb, packet_info *pinfo, prot
     tlp_bdf_t req_bdf = {0};
     dissect_tlp_req_id(tree, tvb, 4, req_id, &req_bdf);
 
-    col_clear(pinfo->cinfo, COL_DEF_SRC);
-    col_add_fstr(pinfo->cinfo, COL_DEF_SRC, "%02x:%02x.%x", req_bdf.bus, req_bdf.dev, req_bdf.fun);
+    const char * bdf_str = wmem_strdup_printf(pinfo->pool, "%02x:%02x.%x", req_bdf.bus, req_bdf.dev, req_bdf.fun);
+    set_address(&pinfo->src, AT_STRINGZ, strlen(bdf_str) + 1, bdf_str);
 
     proto_tree_add_item_ret_uint(tree, HF_PCIE_TLP_TAG_7_0, tvb, 6, 1, ENC_BIG_ENDIAN, tag70);
 }
@@ -1792,8 +1794,8 @@ static void dissect_tlp_mem_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *t
 
         col_append_fstr(pinfo->cinfo, COL_INFO, " @ 0x%016lx", addr);
 
-        col_clear(pinfo->cinfo, COL_DEF_DST);
-        col_add_fstr(pinfo->cinfo, COL_DEF_DST, "0x%016lx", addr);
+        const char * addr_str = wmem_strdup_printf(pinfo->pool, "0x%016lx", addr);
+        set_address(&pinfo->dst, AT_STRINGZ, strlen(addr_str) + 1, addr_str);
     } else {
         uint32_t addr_ph = 0;
         proto_item * addr_ph_item = proto_tree_add_item_ret_uint(tree, HF_PCIE_TLP_ADDR_PH_32, tvb, 8, 4, ENC_BIG_ENDIAN, &addr_ph);
@@ -1809,8 +1811,8 @@ static void dissect_tlp_mem_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *t
 
         col_append_fstr(pinfo->cinfo, COL_INFO, " @ 0x%08x", addr);
 
-        col_clear(pinfo->cinfo, COL_DEF_DST);
-        col_add_fstr(pinfo->cinfo, COL_DEF_DST, "0x%08x", addr);
+        const char * addr_str = wmem_strdup_printf(pinfo->pool, "0x%08x", addr);
+        set_address(&pinfo->dst, AT_STRINGZ, strlen(addr_str) + 1, addr_str);
     }
 }
 
@@ -1822,8 +1824,8 @@ static void dissect_tlp_io_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tr
 
     col_append_fstr(pinfo->cinfo, COL_INFO, " @ 0x%08x", addr);
 
-    col_clear(pinfo->cinfo, COL_DEF_DST);
-    col_add_fstr(pinfo->cinfo, COL_DEF_DST, "0x%08x", addr);
+    const char * addr_str = wmem_strdup_printf(pinfo->pool, "0x%08x", addr);
+    set_address(&pinfo->dst, AT_STRINGZ, strlen(addr_str) + 1, addr_str);
 }
 
 static void dissect_tlp_cfg_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data, uint32_t *req_id, uint32_t *tag70) {
@@ -1832,8 +1834,8 @@ static void dissect_tlp_cfg_req(tvbuff_t *tvb, packet_info *pinfo, proto_tree *t
     tlp_bdf_t cpl_bdf = {0};
     dissect_tlp_cpl_id(tree, tvb, 8, &cpl_bdf);
 
-    col_clear(pinfo->cinfo, COL_DEF_DST);
-    col_add_fstr(pinfo->cinfo, COL_DEF_DST, "%02x:%02x.%x", cpl_bdf.bus, cpl_bdf.dev, cpl_bdf.fun);
+    const char * bdf_str = wmem_strdup_printf(pinfo->pool, "%02x:%02x.%x", cpl_bdf.bus, cpl_bdf.dev, cpl_bdf.fun);
+    set_address(&pinfo->dst, AT_STRINGZ, strlen(bdf_str) + 1, bdf_str);
 
     uint32_t reg_num = 0;
     proto_tree_add_item_ret_uint(tree, HF_PCIE_TLP_REG, tvb, 10, 2, ENC_BIG_ENDIAN, &reg_num);
@@ -1857,8 +1859,8 @@ static void dissect_tlp_cpl(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree,
     tlp_bdf_t cpl_bdf = {0};
     dissect_tlp_cpl_id(tree, tvb, 4, &cpl_bdf);
 
-    col_clear(pinfo->cinfo, COL_DEF_SRC);
-    col_add_fstr(pinfo->cinfo, COL_DEF_SRC, "%02x:%02x.%x", cpl_bdf.bus, cpl_bdf.dev, cpl_bdf.fun);
+    const char * src_bdf_str = wmem_strdup_printf(pinfo->pool, "%02x:%02x.%x", cpl_bdf.bus, cpl_bdf.dev, cpl_bdf.fun);
+    set_address(&pinfo->src, AT_STRINGZ, strlen(src_bdf_str) + 1, src_bdf_str);
 
     proto_item * status_bcm_byte_count_item = proto_tree_add_item(tree, HF_PCIE_TLP_CPL_STATUS_BCM_BYTE_COUNT, tvb, 6, 2, ENC_BIG_ENDIAN);
     proto_tree * status_bcm_byte_count_tree = proto_item_add_subtree(status_bcm_byte_count_item, ETT_PCIE_TLP_CPL_STATUS_BCM_BYTE_COUNT);
@@ -1887,8 +1889,8 @@ static void dissect_tlp_cpl(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree,
     tlp_bdf_t req_bdf = {0};
     dissect_tlp_req_id(tree, tvb, 8, req_id, &req_bdf);
 
-    col_clear(pinfo->cinfo, COL_DEF_DST);
-    col_add_fstr(pinfo->cinfo, COL_DEF_DST, "%02x:%02x.%x", req_bdf.bus, req_bdf.dev, req_bdf.fun);
+    const char * dst_bdf_str = wmem_strdup_printf(pinfo->pool, "%02x:%02x.%x", req_bdf.bus, req_bdf.dev, req_bdf.fun);
+    set_address(&pinfo->dst, AT_STRINGZ, strlen(dst_bdf_str) + 1, dst_bdf_str);
 
     proto_tree_add_item_ret_uint(tree, HF_PCIE_TLP_TAG_7_0, tvb, 10, 1, ENC_BIG_ENDIAN, tag70);
     proto_tree_add_item(tree, HF_PCIE_TLP_CPL_LOWER_ADDR, tvb, 11, 1, ENC_BIG_ENDIAN);

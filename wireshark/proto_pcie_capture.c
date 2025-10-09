@@ -21,6 +21,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include <epan/address.h>
 #include <epan/expert.h>
 #include <epan/packet.h>
 #include <epan/proto.h>
@@ -431,11 +432,11 @@ static int dissect_pcie(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
     col_set_str(pinfo->cinfo, COL_PROTOCOL, "PCIe");
 
     if (direction) {
-        col_set_str(pinfo->cinfo, COL_DEF_SRC, "Downstream Device");
-        col_set_str(pinfo->cinfo, COL_DEF_DST, "Upstream Device");
+        set_address(&pinfo->src, AT_STRINGZ, 18, "Downstream Device");
+        set_address(&pinfo->dst, AT_STRINGZ, 16, "Upstream Device");
     } else {
-        col_set_str(pinfo->cinfo, COL_DEF_SRC, "Upstream Device");
-        col_set_str(pinfo->cinfo, COL_DEF_DST, "Downstream Device");
+        set_address(&pinfo->src, AT_STRINGZ, 16, "Upstream Device");
+        set_address(&pinfo->dst, AT_STRINGZ, 18, "Downstream Device");
     }
 
     tvbuff_t * frame_tvb;
