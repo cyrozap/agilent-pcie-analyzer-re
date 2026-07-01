@@ -2,7 +2,7 @@
 
 /*
  *  proto_pcie_capture.c - PCIe capture dissector for Wireshark.
- *  Copyright (C) 2023-2025  Forest Crossman <cyrozap@gmail.com>
+ *  Copyright (C) 2023-2026  Forest Crossman <cyrozap@gmail.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include <epan/expert.h>
 #include <epan/packet.h>
 #include <epan/proto.h>
+#include <epan/tfs.h>
 #include <wiretap/wtap.h>
 
 #include "proto_pcie_capture.h"
